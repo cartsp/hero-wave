@@ -1,7 +1,19 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<WavyBackground Title="Build Amazing Apps"
+                Subtitle="A reusable wavy background component for Blazor"
+                Height="60vh">
+    <a href="/fullpage"
+       style="padding: 0.75rem 2rem; background: white; color: #0c0c14;
+              border-radius: 0.5rem; text-decoration: none; font-weight: 600;">
+        View Full Page Demo
+    </a>
+</WavyBackground>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+<div style="padding: 4rem 2rem; color: white; text-align: center;">
+    <h2 style="margin-bottom: 1rem;">Below the Hero</h2>
+    <p style="color: rgba(255,255,255,0.7); max-width: 600px; margin: 0 auto;">
+        This content sits below the wavy hero section, demonstrating that
+        the component works as a partial-height section background.
+    </p>
+</div>
