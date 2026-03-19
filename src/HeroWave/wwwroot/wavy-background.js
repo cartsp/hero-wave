@@ -78,7 +78,7 @@ export function init(canvas, config) {
     let nt = 0;
     let animationFrameId = null;
 
-    const speedFactor = config.speed === "fast" ? 0.002 : 0.001;
+    const speedFactor = config.speed === "fast" ? 0.004 : 0.002;
     let running = true;
 
     function resize() {
