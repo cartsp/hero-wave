@@ -1,0 +1,14 @@
+<div class="wavy-background-container" style="height: @Height">
+    <canvas @ref="_canvas" class="wavy-background-canvas"></canvas>
+    <div class="wavy-background-overlay @CssClass">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <h1 class="wavy-background-title">@Title</h1>
+        }
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <p class="wavy-background-subtitle">@Subtitle</p>
+        }
+        @ChildContent
+    </div>
+</div>
