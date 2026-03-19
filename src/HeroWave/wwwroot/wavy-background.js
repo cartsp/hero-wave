@@ -1,0 +1,140 @@
+// Simplex noise implementation (3D)
+// Based on Stefan Gustavson's implementation
+const F3 = 1.0 / 3.0;
+const G3 = 1.0 / 6.0;
+
+const grad3 = [
+    [1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
+    [1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],
+    [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
+];
+
+function createNoise() {
+    const perm = new Uint8Array(512);
+    const p = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) p[i] = i;
+    // Fisher-Yates shuffle
+    for (let i = 255; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [p[i], p[j]] = [p[j], p[i]];
+    }
+    for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+
+    return function noise3D(x, y, z) {
+        const s = (x + y + z) * F3;
+        const i = Math.floor(x + s);
+        const j = Math.floor(y + s);
+        const k = Math.floor(z + s);
+        const t = (i + j + k) * G3;
+
+        const X0 = i - t, Y0 = j - t, Z0 = k - t;
+        const x0 = x - X0, y0 = y - Y0, z0 = z - Z0;
+
+        let i1, j1, k1, i2, j2, k2;
+        if (x0 >= y0) {
+            if (y0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=1;k2=0; }
+            else if (x0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=0;k2=1; }
+            else { i1=0;j1=0;k1=1;i2=1;j2=0;k2=1; }
+        } else {
+            if (y0 < z0) { i1=0;j1=0;k1=1;i2=0;j2=1;k2=1; }
+            else if (x0 < z0) { i1=0;j1=1;k1=0;i2=0;j2=1;k2=1; }
+            else { i1=0;j1=1;k1=0;i2=1;j2=1;k2=0; }
+        }
+
+        const x1 = x0-i1+G3, y1 = y0-j1+G3, z1 = z0-k1+G3;
+        const x2 = x0-i2+2*G3, y2 = y0-j2+2*G3, z2 = z0-k2+2*G3;
+        const x3 = x0-1+3*G3, y3 = y0-1+3*G3, z3 = z0-1+3*G3;
+
+        const ii = i & 255, jj = j & 255, kk = k & 255;
+
+        function dot(g, x, y, z) { return g[0]*x + g[1]*y + g[2]*z; }
+        function contrib(g, x, y, z) {
+            const t = 0.6 - x*x - y*y - z*z;
+            return t < 0 ? 0 : t * t * t * t * dot(g, x, y, z);
+        }
+
+        const gi0 = perm[ii + perm[jj + perm[kk]]] % 12;
+        const gi1 = perm[ii+i1 + perm[jj+j1 + perm[kk+k1]]] % 12;
+        const gi2 = perm[ii+i2 + perm[jj+j2 + perm[kk+k2]]] % 12;
+        const gi3 = perm[ii+1 + perm[jj+1 + perm[kk+1]]] % 12;
+
+        return 32 * (
+            contrib(grad3[gi0], x0, y0, z0) +
+            contrib(grad3[gi1], x1, y1, z1) +
+            contrib(grad3[gi2], x2, y2, z2) +
+            contrib(grad3[gi3], x3, y3, z3)
+        );
+    };
+}
+
+// Instance management
+const instances = new Map();
+let nextId = 0;
+
+export function init(canvas, config) {
+    const id = String(nextId++);
+    const ctx = canvas.getContext("2d");
+    const noise = createNoise();
+    let nt = 0;
+    let animationFrameId = null;
+
+    const speedFactor = config.speed === "fast" ? 0.002 : 0.001;
+    let running = true;
+
+    function resize() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    }
+
+    function draw() {
+        if (!running) return;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = config.backgroundColor;
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = config.opacity;
+        ctx.filter = `blur(${config.blur}px)`;
+
+        for (let i = 0; i < config.waveCount; i++) {
+            ctx.beginPath();
+            ctx.strokeStyle = config.colors[i % config.colors.length];
+            ctx.lineWidth = config.waveWidth;
+
+            for (let x = 0; x < w; x += 5) {
+                const y = noise(x / 800, 0.3 * i, nt) * 100 + h * 0.5;
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            ctx.closePath();
+        }
+
+        ctx.globalAlpha = 1;
+        ctx.filter = "none";
+        nt += speedFactor;
+        animationFrameId = requestAnimationFrame(draw);
+    }
+
+    resize();
+    window.addEventListener("resize", resize);
+    animationFrameId = requestAnimationFrame(draw);
+
+    instances.set(id, { animationFrameId, resize, canvas, stop: () => { running = false; } });
+    return id;
+}
+
+export function dispose(id) {
+    const instance = instances.get(id);
+    if (!instance) return;
+    instance.stop();
+    cancelAnimationFrame(instance.animationFrameId);
+    window.removeEventListener("resize", instance.resize);
+    const ctx = instance.canvas.getContext("2d");
+    if (ctx) ctx.clearRect(0, 0, instance.canvas.width, instance.canvas.height);
+    instances.delete(id);
+}
