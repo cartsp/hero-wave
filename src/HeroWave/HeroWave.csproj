@@ -3,9 +3,31 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- NuGet package metadata -->
+    <PackageId>HeroWave</PackageId>
+    <Authors>LiamBoyleNie</Authors>
+    <Description>A reusable Blazor component for animated wavy background effects powered by canvas and simplex noise. Customizable colors, speed, blur, wave count, and more.</Description>
+    <PackageProjectUrl>https://github.com/LiamBoyleNie/hero-wave</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/LiamBoyleNie/hero-wave</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>blazor;component;wavy;background;animation;canvas;wasm</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+
+    <!-- MinVer: version from git tags (e.g. v1.0.0) -->
+    <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.4" />
+    <PackageReference Include="MinVer" Version="6.*" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="../../assets/icon.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 </Project>
