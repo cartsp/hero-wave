@@ -1,0 +1,93 @@
+@page "/showcase"
+
+<div style="color: white; text-align: center; padding: 1rem 0;">
+    <h2 style="margin: 0;">Color & Settings Showcase</h2>
+    <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Scroll to compare different presets</p>
+</div>
+
+<!-- 1. Ocean Aurora — cool blues/greens, more blur, slower -->
+<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 0.5rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;">Ocean Aurora</div>
+<WavyBackground Height="50vh"
+                Colors="@(new[] { "#0ea5e9", "#06b6d4", "#14b8a6", "#10b981", "#34d399" })"
+                BackgroundColor="#021a2b"
+                WaveCount="6"
+                WaveWidth="60"
+                Blur="14"
+                Speed="slow"
+                Opacity="0.6">
+    <p style="color: white; font-size: 1.5rem; font-weight: 600;">Deep sea calm</p>
+</WavyBackground>
+
+<!-- 2. Sunset Fire — warm oranges, reds, pinks -->
+<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 0.5rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;">Sunset Fire</div>
+<WavyBackground Height="50vh"
+                Colors="@(new[] { "#f97316", "#ef4444", "#ec4899", "#f59e0b", "#fb923c" })"
+                BackgroundColor="#1a0a00"
+                WaveCount="5"
+                WaveWidth="45"
+                Blur="12"
+                Speed="fast"
+                Opacity="0.55">
+    <p style="color: white; font-size: 1.5rem; font-weight: 600;">Warm & energetic</p>
+</WavyBackground>
+
+<!-- 3. Neon Cyberpunk — electric, high contrast -->
+<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 0.5rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;">Neon Cyberpunk</div>
+<WavyBackground Height="50vh"
+                Colors="@(new[] { "#ff00ff", "#00ffff", "#39ff14", "#ff3131" })"
+                BackgroundColor="#0a0a0a"
+                WaveCount="4"
+                WaveWidth="35"
+                Blur="8"
+                Speed="fast"
+                Opacity="0.7">
+    <p style="color: white; font-size: 1.5rem; font-weight: 600;">Electric & bold</p>
+</WavyBackground>
+
+<!-- 4. Minimal Frost — white/silver on dark, subtle -->
+<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 0.5rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;">Minimal Frost</div>
+<WavyBackground Height="50vh"
+                Colors="@(new[] { "#e2e8f0", "#94a3b8", "#cbd5e1", "#f1f5f9" })"
+                BackgroundColor="#0f172a"
+                WaveCount="3"
+                WaveWidth="70"
+                Blur="20"
+                Speed="slow"
+                Opacity="0.3">
+    <p style="color: white; font-size: 1.5rem; font-weight: 600;">Clean & elegant</p>
+</WavyBackground>
+
+<!-- 5. Northern Lights — purples, greens, shifting -->
+<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 0.5rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;">Northern Lights</div>
+<WavyBackground Height="50vh"
+                Colors="@(new[] { "#a855f7", "#6366f1", "#22d3ee", "#4ade80", "#818cf8" })"
+                BackgroundColor="#0c0720"
+                WaveCount="7"
+                WaveWidth="55"
+                Blur="16"
+                Speed="slow"
+                Opacity="0.5">
+    <p style="color: white; font-size: 1.5rem; font-weight: 600;">Ethereal glow</p>
+</WavyBackground>
+
+<!-- 6. Molten Gold — luxurious golds and ambers -->
+<div style="text-align: center; color: rgba(255,255,255,0.4); padding: 0.5rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;">Molten Gold</div>
+<WavyBackground Height="50vh"
+                Colors="@(new[] { "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#fcd34d" })"
+                BackgroundColor="#1c1208"
+                WaveCount="5"
+                WaveWidth="55"
+                Blur="14"
+                Speed="fast"
+                Opacity="0.45">
+    <p style="color: white; font-size: 1.5rem; font-weight: 600;">Premium & rich</p>
+</WavyBackground>
+
+<div style="text-align: center; padding: 2rem;">
+    <a href="/"
+       style="padding: 0.75rem 2rem; background: rgba(255,255,255,0.1);
+              color: white; border-radius: 0.5rem; text-decoration: none;
+              border: 1px solid rgba(255,255,255,0.2);">
+        Back to Home
+    </a>
+</div>
