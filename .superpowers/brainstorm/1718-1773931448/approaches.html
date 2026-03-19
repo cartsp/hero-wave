@@ -1,0 +1,58 @@
+<h2>Implementation Approaches</h2>
+<p class="subtitle">Three ways to build the WavyBackground Blazor component — all use Canvas + JS interop under the hood</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Single-Project Component (Recommended)</h3>
+      <p>Build the component directly inside a Blazor WASM app. The <code>WavyBackground.razor</code> component, its JS module, and a demo page all live in one project.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Simplest setup — one project, fast iteration</li>
+          <li>Easy to test and demo immediately</li>
+          <li>Can extract into a library later if needed</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Component isn't separately packaged for reuse across solutions</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Razor Class Library + Demo App</h3>
+      <p>Two projects in a solution: a Razor Class Library (RCL) containing the component + bundled JS, and a Blazor WASM app that references it for demo/testing.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Component is a NuGet-packageable library from day one</li>
+          <li>Clean separation of component vs consumer</li>
+          <li>JS files auto-bundled via <code>_content/</code> static assets</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Slightly more setup (solution + two projects)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Standalone JS + Blazor Wrapper</h3>
+      <p>Build the wave engine as a standalone ES module first (testable in plain HTML), then create a thin Blazor component wrapper that calls into it.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Wave engine is framework-agnostic, reusable beyond Blazor</li>
+          <li>Can debug the JS visuals independently in a browser</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Two separate development workflows (JS + Blazor)</li>
+          <li>More moving parts for a Blazor-focused use case</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>

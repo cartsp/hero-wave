@@ -1,0 +1,118 @@
+<h2>Component API</h2>
+<p class="subtitle">Parameters exposed to consumers of the WavyBackground component</p>
+
+<div class="section">
+  <h3>Usage Examples</h3>
+  <div class="split">
+    <div class="mockup">
+      <div class="mockup-header">Hero Section</div>
+      <div class="mockup-body" style="font-family:monospace;font-size:0.8rem;line-height:1.6;padding:1.2rem;white-space:pre;">&lt;WavyBackground Title="Build Amazing Apps"
+                  Subtitle="Powered by Blazor"
+                  Height="60vh"&gt;
+    &lt;button class="cta"&gt;Get Started&lt;/button&gt;
+&lt;/WavyBackground&gt;</div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-header">Full Page Background</div>
+      <div class="mockup-body" style="font-family:monospace;font-size:0.8rem;line-height:1.6;padding:1.2rem;white-space:pre;">&lt;WavyBackground Height="100vh"&gt;
+    &lt;div class="my-layout"&gt;
+        &lt;nav&gt;...&lt;/nav&gt;
+        &lt;main&gt;...&lt;/main&gt;
+    &lt;/div&gt;
+&lt;/WavyBackground&gt;</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Parameters</h3>
+  <div class="mockup">
+    <div class="mockup-header">WavyBackground [Parameter] Properties</div>
+    <div class="mockup-body" style="padding:1.2rem;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.15);text-align:left;">
+            <th style="padding:0.5rem;">Parameter</th>
+            <th style="padding:0.5rem;">Type</th>
+            <th style="padding:0.5rem;">Default</th>
+            <th style="padding:0.5rem;">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>Title</code></td>
+            <td style="padding:0.5rem;"><code>string?</code></td>
+            <td style="padding:0.5rem;">null</td>
+            <td style="padding:0.5rem;">Large heading text centered over the waves</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>Subtitle</code></td>
+            <td style="padding:0.5rem;"><code>string?</code></td>
+            <td style="padding:0.5rem;">null</td>
+            <td style="padding:0.5rem;">Smaller text below the title</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>ChildContent</code></td>
+            <td style="padding:0.5rem;"><code>RenderFragment?</code></td>
+            <td style="padding:0.5rem;">null</td>
+            <td style="padding:0.5rem;">Custom Razor markup rendered below title/subtitle</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>Height</code></td>
+            <td style="padding:0.5rem;"><code>string</code></td>
+            <td style="padding:0.5rem;">"100vh"</td>
+            <td style="padding:0.5rem;">CSS height of the container (e.g., "60vh", "400px")</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>Colors</code></td>
+            <td style="padding:0.5rem;"><code>string[]</code></td>
+            <td style="padding:0.5rem;">Original 5 colors</td>
+            <td style="padding:0.5rem;">Hex color array for wave lines</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>BackgroundColor</code></td>
+            <td style="padding:0.5rem;"><code>string</code></td>
+            <td style="padding:0.5rem;">"#0c0c14"</td>
+            <td style="padding:0.5rem;">Background fill color behind the waves</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>WaveCount</code></td>
+            <td style="padding:0.5rem;"><code>int</code></td>
+            <td style="padding:0.5rem;">5</td>
+            <td style="padding:0.5rem;">Number of wave layers</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>WaveWidth</code></td>
+            <td style="padding:0.5rem;"><code>int</code></td>
+            <td style="padding:0.5rem;">50</td>
+            <td style="padding:0.5rem;">Stroke width of each wave line (px)</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>Blur</code></td>
+            <td style="padding:0.5rem;"><code>int</code></td>
+            <td style="padding:0.5rem;">10</td>
+            <td style="padding:0.5rem;">Gaussian blur radius (px)</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>Speed</code></td>
+            <td style="padding:0.5rem;"><code>string</code></td>
+            <td style="padding:0.5rem;">"slow"</td>
+            <td style="padding:0.5rem;">"slow" (0.001) or "fast" (0.002) animation speed</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);">
+            <td style="padding:0.5rem;"><code>Opacity</code></td>
+            <td style="padding:0.5rem;"><code>double</code></td>
+            <td style="padding:0.5rem;">0.5</td>
+            <td style="padding:0.5rem;">Wave opacity (0.0 – 1.0)</td>
+          </tr>
+          <tr>
+            <td style="padding:0.5rem;"><code>CssClass</code></td>
+            <td style="padding:0.5rem;"><code>string?</code></td>
+            <td style="padding:0.5rem;">null</td>
+            <td style="padding:0.5rem;">Additional CSS class on the overlay container</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
