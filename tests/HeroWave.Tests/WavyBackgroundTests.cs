@@ -108,8 +108,7 @@ public class WavyBackgroundTests : BunitContext
             .Add(x => x.BackgroundColor, "#111111")
             .Add(x => x.WaveCount, 3)
             .Add(x => x.WaveWidth, 40)
-            .Add(x => x.Blur, 5)
-            .Add(x => x.Speed, "fast")
+            .Add(x => x.Speed, 0.008)
             .Add(x => x.Opacity, 0.8));
 
         var initInvocations = _moduleInterop.Invocations["init"];
