@@ -46,8 +46,7 @@ Add the namespace to your `_Imports.razor`:
 | `BackgroundColor` | `string` | `"#0c0c14"` | Background fill color |
 | `WaveCount` | `int` | `5` | Number of wave layers |
 | `WaveWidth` | `int` | `50` | Stroke width of each wave (px) |
-| `Blur` | `int` | `10` | Gaussian blur radius (px) |
-| `Speed` | `string` | `"slow"` | `"slow"` or `"fast"` animation speed |
+| `Speed` | `double` | `0.004` | Animation speed — time increment per frame (e.g. `0.004` slow, `0.008` fast) |
 | `Opacity` | `double` | `0.5` | Wave opacity (0.0 - 1.0) |
 | `CssClass` | `string?` | null | Additional CSS class on the overlay |
 
@@ -67,7 +66,7 @@ Add the namespace to your `_Imports.razor`:
 
 ```razor
 <WavyBackground Height="100vh"
-                Speed="fast"
+                Speed="0.008"
                 Colors="@(new[] { "#22d3ee", "#818cf8", "#e879f9" })"
                 WaveCount="7"
                 Opacity="0.6">
@@ -83,37 +82,37 @@ Add the namespace to your `_Imports.razor`:
 **Ocean Aurora** - cool blues and greens
 ```razor
 <WavyBackground Colors="@(new[] { "#0ea5e9", "#06b6d4", "#14b8a6", "#10b981", "#34d399" })"
-                BackgroundColor="#021a2b" WaveCount="6" WaveWidth="60" Blur="14" Opacity="0.6" />
+                BackgroundColor="#021a2b" WaveCount="6" WaveWidth="60" Opacity="0.6" />
 ```
 
 **Sunset Fire** - warm oranges, reds, pinks
 ```razor
 <WavyBackground Colors="@(new[] { "#f97316", "#ef4444", "#ec4899", "#f59e0b", "#fb923c" })"
-                BackgroundColor="#1a0a00" Speed="fast" Opacity="0.55" />
+                BackgroundColor="#1a0a00" Speed="0.008" Opacity="0.55" />
 ```
 
 **Neon Cyberpunk** - electric, high contrast
 ```razor
 <WavyBackground Colors="@(new[] { "#ff00ff", "#00ffff", "#39ff14", "#ff3131" })"
-                BackgroundColor="#0a0a0a" WaveCount="4" WaveWidth="35" Blur="8" Speed="fast" Opacity="0.7" />
+                BackgroundColor="#0a0a0a" WaveCount="4" WaveWidth="35" Speed="0.008" Opacity="0.7" />
 ```
 
 **Minimal Frost** - white/silver on dark, subtle
 ```razor
 <WavyBackground Colors="@(new[] { "#e2e8f0", "#94a3b8", "#cbd5e1", "#f1f5f9" })"
-                BackgroundColor="#0f172a" WaveCount="3" WaveWidth="70" Blur="20" Opacity="0.3" />
+                BackgroundColor="#0f172a" WaveCount="3" WaveWidth="70" Opacity="0.3" />
 ```
 
 **Northern Lights** - purples, greens, ethereal
 ```razor
 <WavyBackground Colors="@(new[] { "#a855f7", "#6366f1", "#22d3ee", "#4ade80", "#818cf8" })"
-                BackgroundColor="#0c0720" WaveCount="7" WaveWidth="55" Blur="16" />
+                BackgroundColor="#0c0720" WaveCount="7" WaveWidth="55" />
 ```
 
 **Molten Gold** - luxurious golds and ambers
 ```razor
 <WavyBackground Colors="@(new[] { "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#fcd34d" })"
-                BackgroundColor="#1c1208" Speed="fast" Opacity="0.45" />
+                BackgroundColor="#1c1208" Speed="0.008" Opacity="0.45" />
 ```
 
 ## Contributing
