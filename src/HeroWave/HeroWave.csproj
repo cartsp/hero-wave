@@ -7,7 +7,7 @@
     <!-- NuGet package metadata -->
     <PackageId>HeroWave</PackageId>
     <Authors>LiamBoyleNie</Authors>
-    <Description>A reusable Blazor component for animated wavy background effects powered by canvas and simplex noise. Customizable colors, speed, blur, wave count, and more.</Description>
+    <Description>A reusable Blazor component for animated wavy background effects powered by canvas and simplex noise. Customizable colors, speed, wave count, opacity, and more.</Description>
     <PackageProjectUrl>https://github.com/cartsp/hero-wave</PackageProjectUrl>
     <RepositoryUrl>https://github.com/cartsp/hero-wave</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
