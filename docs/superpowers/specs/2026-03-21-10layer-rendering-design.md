@@ -71,7 +71,7 @@ const layers = layerDefs.map(l => ({
 
 Each wave is drawn 10 times — widest/faintest first, narrowest/brightest last. The overlapping semi-transparent strokes create a gradual falloff that approximates the gaussian blur effect. No `ctx.filter`, no `ctx.shadowBlur`.
 
-The `config.blur` parameter is no longer used — the blur effect is produced by the layer spread. A console info message is logged if `config.blur` is set to a non-default value: `"[HeroWave] blur parameter has no effect — glow is produced by layered alpha rendering"`.
+The `Blur` parameter is removed from the public API (see API changes below).
 
 #### 3. Wave path computation — compute once, draw 10 times
 
@@ -123,15 +123,30 @@ Current step is 5px at full resolution. At 0.25x the canvas is ~4x narrower, so 
 
 Add `ctx.lineCap = 'round'` and `ctx.lineJoin = 'round'` for smoother visual appearance at the wider stroke widths.
 
+### API changes (breaking)
+
+#### Remove `Blur` parameter
+
+The `Blur` parameter (`int`, default 10) is removed from `WavyBackground.razor.cs`. The glow effect is now produced entirely by the layered alpha strokes — there is no filter to control. The layer spread is derived from `WaveWidth`.
+
+**Files**: `WavyBackground.razor.cs` (remove parameter), `wavy-background.js` (remove from config consumption)
+
+#### Change `Speed` from `string` to `double`
+
+Current: `Speed` is a `string` accepting `"slow"` (0.004) or `"fast"` (0.008).
+
+New: `Speed` is a `double` (default `0.004`) used directly as the time increment per frame. This gives users continuous control instead of two discrete presets.
+
+**Files**: `WavyBackground.razor.cs` (change parameter type and default), `wavy-background.js` (use `config.speed` directly instead of ternary)
+
+**Migration**: `Speed="slow"` → `Speed="0.004"`, `Speed="fast"` → `Speed="0.008"`
+
 ### What stays the same
 
-- **Public API**: All Blazor component parameters unchanged
-- **C# code**: `WavyBackground.razor.cs` unchanged — same JS interop, same config object
 - **Razor markup**: `WavyBackground.razor` unchanged
 - **Scoped CSS**: `WavyBackground.razor.css` unchanged
 - **Instance management**: `init()` / `dispose()` signatures and instance Map unchanged
 - **Noise implementation**: Simplex noise code unchanged
-- **Config handling**: Speed, colors, waveCount, backgroundColor all consumed the same way
 - **Resize handler**: Still responds to `window.resize`, just applies the scale factor
 - **Animation loop**: Still uses `requestAnimationFrame`
 
@@ -139,12 +154,11 @@ Add `ctx.lineCap = 'round'` and `ctx.lineJoin = 'round'` for smoother visual app
 
 | Parameter | Current usage | New usage |
 |-----------|--------------|-----------|
-| `colors` | `ctx.strokeStyle` per wave | Same — `ctx.strokeStyle` per wave |
+| `colors` | `ctx.strokeStyle` per wave | Same |
 | `backgroundColor` | `ctx.fillStyle` background | Same — filled at `globalAlpha = 1` (fix: current code incorrectly applies wave opacity to background) |
 | `waveCount` | Loop count | Same |
 | `waveWidth` | `ctx.lineWidth` directly | Base for layer widths — widest layer is `waveWidth * 2.4 * scale`, narrowest is `waveWidth * 0.6 * scale` |
-| `blur` | `ctx.filter = "blur(Npx)"` | No longer used — glow comes from layer spread. Console info logged if non-default value set |
-| `speed` | `speedFactor` for time increment | Same |
+| `speed` | `string` → `speedFactor` ternary | `double` used directly as time increment |
 | `opacity` | `ctx.globalAlpha` applied globally | Scales all layer alphas proportionally — `layerAlpha * (opacity / 0.5)`. Default 0.5 produces the calibrated values |
 
 ### Layer alpha math
@@ -161,8 +175,9 @@ This matches the original's `globalAlpha = 0.5` at the wave center. At the outer
 
 ## Testing
 
-- **Existing bUnit tests**: Should pass unchanged — they test component rendering/parameters, not canvas visuals
-- **Existing E2E tests**: Should pass — they verify the canvas element exists and animation runs, not pixel output
+- **bUnit tests**: Update tests that reference `Blur` parameter or `Speed` as string — remove blur tests, update speed tests to use `double`
+- **E2E tests**: Should pass — they verify canvas element exists and animation runs, not pixel output
+- **Demo pages**: Update preset examples to remove `Blur` parameter and change `Speed` from string to double
 - **Manual verification**: Compare visual output in demo app against current version at various presets
 - **Performance verification**: Measure frame times on constrained hardware to confirm improvement
 
@@ -170,4 +185,10 @@ This matches the original's `globalAlpha = 0.5` at the wave center. At the outer
 
 | File | Change |
 |------|--------|
-| `src/HeroWave/wwwroot/wavy-background.js` | Replace resize logic, draw loop, remove filter blur |
+| `src/HeroWave/wwwroot/wavy-background.js` | Replace resize logic, draw loop, remove filter/blur, use speed directly |
+| `src/HeroWave/Components/WavyBackground.razor.cs` | Remove `Blur` parameter, change `Speed` from `string` to `double` (default 0.004) |
+| `tests/HeroWave.Tests/WavyBackgroundTests.cs` | Update tests for removed `Blur` and changed `Speed` type |
+| `demo/HeroWave.Demo/Pages/Home.razor` | Update usage — remove `Blur`, change `Speed` |
+| `demo/HeroWave.Demo/Pages/FullPage.razor` | Update usage — remove `Blur`, change `Speed` |
+| `demo/HeroWave.Demo/Pages/Showcase.razor` | Update presets — remove `Blur`, change `Speed` |
+| `README.md` | Update parameter docs, examples, presets |
