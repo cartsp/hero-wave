@@ -88,7 +88,7 @@ Add the namespace to your `_Imports.razor`:
 **Sunset Fire** - warm oranges, reds, pinks
 ```razor
 <WavyBackground Colors="@(new[] { "#f97316", "#ef4444", "#ec4899", "#f59e0b", "#fb923c" })"
-                BackgroundColor="#1a0a00" Opacity="0.55" />
+                BackgroundColor="#1a0a00" Speed="0.008" Opacity="0.55" />
 ```
 
 **Neon Cyberpunk** - electric, high contrast
