@@ -3,8 +3,11 @@
 [![CI](https://github.com/cartsp/hero-wave/actions/workflows/ci.yml/badge.svg)](https://github.com/cartsp/hero-wave/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/HeroWave.svg)](https://www.nuget.org/packages/HeroWave)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-live-blue)](https://cartsp.github.io/hero-wave/)
 
 A reusable Blazor component for animated wavy background effects powered by HTML5 Canvas and simplex noise. Works as a hero section, full-page background, or any container background.
+
+**[View Live Demo](https://cartsp.github.io/hero-wave/)** | [Hero Section](https://cartsp.github.io/hero-wave/) | [Full Page](https://cartsp.github.io/hero-wave/fullpage) | [Color Showcase](https://cartsp.github.io/hero-wave/showcase)
 
 ![Hero section demo](assets/screenshots/hero.png)
 
