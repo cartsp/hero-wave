@@ -162,6 +162,7 @@
 
         _fps = 0; _min = 0; _max = 0; _avg = 0;
         _fpsHistory = new int[60];
+        await InvokeAsync(StateHasChanged);
     }
 
     private static string BuildGraphPoints(int[] history, int width, int height)
