@@ -1,0 +1,24 @@
+@* Reusable toggle switch for Benchmark.razor *@
+<label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+    <div @onclick="Toggle"
+         style="width: 40px; height: 22px; border-radius: 11px; position: relative;
+                transition: background 0.2s; cursor: pointer;
+                background: @(Active ? "#4ade80" : "rgba(255,255,255,0.15)");">
+        <div style="width: 18px; height: 18px; border-radius: 50%; background: white;
+                    position: absolute; top: 2px; transition: left 0.2s;
+                    left: @(Active ? "20px" : "2px"); box-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+        </div>
+    </div>
+    <span style="font-size: 13px; transition: color 0.2s;
+                 color: @(Active ? "white" : "rgba(255,255,255,0.5)");">
+        @Label
+    </span>
+</label>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public EventCallback<bool> OnChange { get; set; }
+
+    private async Task Toggle() => await OnChange.InvokeAsync(!Active);
+}
