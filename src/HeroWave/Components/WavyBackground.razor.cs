@@ -18,8 +18,7 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     [Parameter] public string BackgroundColor { get; set; } = "#0c0c14";
     [Parameter] public int WaveCount { get; set; } = 5;
     [Parameter] public int WaveWidth { get; set; } = 50;
-    [Parameter] public int Blur { get; set; } = 10;
-    [Parameter] public string Speed { get; set; } = "slow";
+    [Parameter] public double Speed { get; set; } = 0.004;
     [Parameter] public double Opacity { get; set; } = 0.5;
     [Parameter] public string? CssClass { get; set; }
 
@@ -40,7 +39,6 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
             backgroundColor = BackgroundColor,
             waveCount = WaveCount,
             waveWidth = WaveWidth,
-            blur = Blur,
             speed = Speed,
             opacity = Opacity
         };
