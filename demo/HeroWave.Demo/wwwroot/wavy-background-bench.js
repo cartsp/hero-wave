@@ -33,7 +33,8 @@ function createNoise() {
     }
     for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
 
-    function skewAndLookup(x, y, z) {
+    // Unoptimized: inner closure functions allocated on every call (matches production structure)
+    function noise3D_inner(x, y, z) {
         const s = (x + y + z) * F3;
         const i = Math.floor(x + s);
         const j = Math.floor(y + s);
@@ -59,33 +60,51 @@ function createNoise() {
         const gi1 = perm[ii+i1 + perm[jj+j1 + perm[kk+k1]]] % 12;
         const gi2 = perm[ii+i2 + perm[jj+j2 + perm[kk+k2]]] % 12;
         const gi3 = perm[ii+1 + perm[jj+1 + perm[kk+1]]] % 12;
-        return { gi0,gi1,gi2,gi3, x0,y0,z0, x1,y1,z1, x2,y2,z2, x3,y3,z3 };
-    }
-
-    // Unoptimized: inner closure functions allocated on every call
-    function noise3D_inner(x, y, z) {
-        const r = skewAndLookup(x, y, z);
         function dot(g, x, y, z) { return g[0]*x + g[1]*y + g[2]*z; }
         function contrib(g, x, y, z) {
             const t = 0.6 - x*x - y*y - z*z;
             return t < 0 ? 0 : t * t * t * t * dot(g, x, y, z);
         }
         return 32 * (
-            contrib(grad3[r.gi0], r.x0, r.y0, r.z0) +
-            contrib(grad3[r.gi1], r.x1, r.y1, r.z1) +
-            contrib(grad3[r.gi2], r.x2, r.y2, r.z2) +
-            contrib(grad3[r.gi3], r.x3, r.y3, r.z3)
+            contrib(grad3[gi0], x0, y0, z0) +
+            contrib(grad3[gi1], x1, y1, z1) +
+            contrib(grad3[gi2], x2, y2, z2) +
+            contrib(grad3[gi3], x3, y3, z3)
         );
     }
 
-    // Optimized: module-level _dot/_contrib — no allocation per call
+    // Optimized: module-level _dot/_contrib — no closure allocation per call
     function noise3D_extracted(x, y, z) {
-        const r = skewAndLookup(x, y, z);
+        const s = (x + y + z) * F3;
+        const i = Math.floor(x + s);
+        const j = Math.floor(y + s);
+        const k = Math.floor(z + s);
+        const t = (i + j + k) * G3;
+        const X0 = i - t, Y0 = j - t, Z0 = k - t;
+        const x0 = x - X0, y0 = y - Y0, z0 = z - Z0;
+        let i1, j1, k1, i2, j2, k2;
+        if (x0 >= y0) {
+            if (y0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=1;k2=0; }
+            else if (x0 >= z0) { i1=1;j1=0;k1=0;i2=1;j2=0;k2=1; }
+            else { i1=0;j1=0;k1=1;i2=1;j2=0;k2=1; }
+        } else {
+            if (y0 < z0) { i1=0;j1=0;k1=1;i2=0;j2=1;k2=1; }
+            else if (x0 < z0) { i1=0;j1=1;k1=0;i2=0;j2=1;k2=1; }
+            else { i1=0;j1=1;k1=0;i2=1;j2=1;k2=0; }
+        }
+        const x1 = x0-i1+G3, y1 = y0-j1+G3, z1 = z0-k1+G3;
+        const x2 = x0-i2+2*G3, y2 = y0-j2+2*G3, z2 = z0-k2+2*G3;
+        const x3 = x0-1+3*G3, y3 = y0-1+3*G3, z3 = z0-1+3*G3;
+        const ii = i & 255, jj = j & 255, kk = k & 255;
+        const gi0 = perm[ii + perm[jj + perm[kk]]] % 12;
+        const gi1 = perm[ii+i1 + perm[jj+j1 + perm[kk+k1]]] % 12;
+        const gi2 = perm[ii+i2 + perm[jj+j2 + perm[kk+k2]]] % 12;
+        const gi3 = perm[ii+1 + perm[jj+1 + perm[kk+1]]] % 12;
         return 32 * (
-            _contrib(grad3[r.gi0], r.x0, r.y0, r.z0) +
-            _contrib(grad3[r.gi1], r.x1, r.y1, r.z1) +
-            _contrib(grad3[r.gi2], r.x2, r.y2, r.z2) +
-            _contrib(grad3[r.gi3], r.x3, r.y3, r.z3)
+            _contrib(grad3[gi0], x0, y0, z0) +
+            _contrib(grad3[gi1], x1, y1, z1) +
+            _contrib(grad3[gi2], x2, y2, z2) +
+            _contrib(grad3[gi3], x3, y3, z3)
         );
     }
 
