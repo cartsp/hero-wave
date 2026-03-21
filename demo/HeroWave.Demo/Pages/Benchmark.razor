@@ -1,0 +1,195 @@
+@page "/benchmark"
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div style="position: relative; width: 100%; height: 100vh; background: #0c0c14; overflow: hidden;">
+
+    <!-- Canvas fills the container -->
+    <canvas @ref="_canvas"
+            style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
+
+    <!-- Overlay title -->
+    <div style="position: relative; z-index: 1; display: flex; flex-direction: column;
+                align-items: center; justify-content: center; height: 100%; pointer-events: none;">
+        <h1 style="color: white; font-size: 2.5rem; font-weight: 700; margin: 0 0 0.5rem 0;">
+            Optimization Benchmark
+        </h1>
+        <p style="color: rgba(255,255,255,0.5); font-size: 1rem; margin: 0;">
+            Toggle optimizations and watch the FPS counter
+        </p>
+    </div>
+
+    <!-- FPS overlay — top right -->
+    <div style="position: absolute; top: 16px; right: 16px; z-index: 2;
+                background: rgba(0,0,0,0.75); border-radius: 10px; padding: 12px 16px;
+                font-family: monospace; min-width: 180px; backdrop-filter: blur(4px);
+                border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 2rem; font-weight: bold; color: @FpsColor; line-height: 1;">
+            @_fps <span style="font-size: 1rem; color: rgba(255,255,255,0.5);">fps</span>
+        </div>
+        <div style="margin-top: 8px; height: 48px;">
+            <svg viewBox="0 0 180 48" style="width: 100%; height: 100%;" preserveAspectRatio="none">
+                @if (_fpsHistory.Length > 1)
+                {
+                    <polyline points="@BuildGraphPoints(_fpsHistory, 180, 48)"
+                              fill="none" stroke="@FpsColor" stroke-width="1.5" stroke-linejoin="round"/>
+                }
+            </svg>
+        </div>
+        <div style="display: flex; justify-content: space-between;
+                    color: rgba(255,255,255,0.45); font-size: 10px; margin-top: 4px;">
+            <span>min @_min</span>
+            <span>avg @_avg</span>
+            <span>max @_max</span>
+        </div>
+    </div>
+
+    <!-- Toggle bar — bottom -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+                background: rgba(0,0,0,0.6); border-top: 1px solid rgba(255,255,255,0.1);
+                padding: 14px 24px; display: flex; gap: 32px; align-items: center;
+                flex-wrap: wrap; backdrop-filter: blur(4px);">
+
+        <ToggleSwitch Label="Extract noise fns" Active="_extractNoiseFns"
+                      OnChange="@(async v => { _extractNoiseFns = v; await CallSetOpt("extractNoiseFns", v); })" />
+
+        <ToggleSwitch Label="Path2D objects" Active="_usePath2D"
+                      OnChange="@(async v => { _usePath2D = v; await CallSetOpt("usePath2D", v); })" />
+
+        <ToggleSwitch Label="Pixelated rendering" Active="_pixelatedRendering"
+                      OnChange="@(async v => { _pixelatedRendering = v; await CallSetOpt("pixelatedRendering", v); })" />
+
+        <button @onclick="ResetAll"
+                style="margin-left: auto; background: rgba(255,255,255,0.08);
+                       border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7);
+                       padding: 6px 16px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+            Reset All
+        </button>
+
+        <a href="/"
+           style="padding: 6px 16px; background: rgba(255,255,255,0.1); color: white;
+                  border-radius: 6px; text-decoration: none; font-size: 12px;
+                  border: 1px solid rgba(255,255,255,0.2);">
+            ← Back to Home
+        </a>
+    </div>
+</div>
+
+@code {
+    private ElementReference _canvas;
+    private IJSObjectReference? _module;
+    private string? _instanceId;
+    private PeriodicTimer? _fpsTimer;
+    private readonly CancellationTokenSource _cts = new();
+
+    // Toggle states
+    private bool _extractNoiseFns;
+    private bool _usePath2D;
+    private bool _pixelatedRendering;
+
+    // FPS display values
+    private int _fps;
+    private int _min;
+    private int _max;
+    private int _avg;
+    private int[] _fpsHistory = new int[60];
+
+    private string FpsColor => _fps >= 55 ? "#4ade80" : _fps >= 30 ? "#facc15" : "#f87171";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _module = await JS.InvokeAsync<IJSObjectReference>(
+            "import", "./wavy-background-bench.js");
+
+        var config = new
+        {
+            colors = new[] { "#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee" },
+            backgroundColor = "#0c0c14",
+            waveCount = 5,
+            waveWidth = 50,
+            speed = 0.004,
+            opacity = 0.5,
+        };
+
+        _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
+
+        _fpsTimer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
+        _ = PollFpsAsync(_cts.Token);
+    }
+
+    private async Task PollFpsAsync(CancellationToken ct)
+    {
+        if (_fpsTimer is null) return;
+        try
+        {
+            while (await _fpsTimer.WaitForNextTickAsync(ct))
+            {
+                if (_module is null || _instanceId is null) continue;
+                var data = await _module.InvokeAsync<FpsData>("getFps", _instanceId);
+                _fps = data.Fps;
+                _min = data.Min;
+                _max = data.Max;
+                _avg = data.Avg;
+                _fpsHistory = data.History ?? _fpsHistory;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private async Task CallSetOpt(string key, bool value)
+    {
+        if (_module is not null && _instanceId is not null)
+            await _module.InvokeVoidAsync("setOptimization", _instanceId, key, value);
+    }
+
+    private async Task ResetAll()
+    {
+        _extractNoiseFns = false;
+        _usePath2D = false;
+        _pixelatedRendering = false;
+
+        if (_module is not null && _instanceId is not null)
+        {
+            await _module.InvokeVoidAsync("setOptimization", _instanceId, "extractNoiseFns", false);
+            await _module.InvokeVoidAsync("setOptimization", _instanceId, "usePath2D", false);
+            await _module.InvokeVoidAsync("setOptimization", _instanceId, "pixelatedRendering", false);
+            await _module.InvokeVoidAsync("resetFps", _instanceId);
+        }
+
+        _fps = 0; _min = 0; _max = 0; _avg = 0;
+        _fpsHistory = new int[60];
+    }
+
+    private static string BuildGraphPoints(int[] history, int width, int height)
+    {
+        if (history.Length < 2) return "";
+        const int maxFps = 120;
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < history.Length; i++)
+        {
+            float x = (float)i / (history.Length - 1) * width;
+            float y = height - (float)Math.Min(history[i], maxFps) / maxFps * height;
+            sb.Append($"{x:F1},{y:F1} ");
+        }
+        return sb.ToString().TrimEnd();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _cts.CancelAsync();
+        _fpsTimer?.Dispose();
+
+        if (_module is not null && _instanceId is not null)
+        {
+            try { await _module.InvokeVoidAsync("dispose", _instanceId); }
+            catch (JSDisconnectedException) { }
+        }
+        if (_module is not null) await _module.DisposeAsync();
+    }
+
+    private record FpsData(int Fps, int Min, int Max, int Avg, int[]? History);
+}
