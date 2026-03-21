@@ -9,6 +9,13 @@ const grad3 = [
     [0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]
 ];
 
+// Module-level helpers — avoids closure allocation per noise call
+function _dot(g, x, y, z) { return g[0]*x + g[1]*y + g[2]*z; }
+function _contrib(g, x, y, z) {
+    const t = 0.6 - x*x - y*y - z*z;
+    return t < 0 ? 0 : t * t * t * t * _dot(g, x, y, z);
+}
+
 function createNoise() {
     const perm = new Uint8Array(512);
     const p = new Uint8Array(256);
@@ -47,22 +54,16 @@ function createNoise() {
 
         const ii = i & 255, jj = j & 255, kk = k & 255;
 
-        function dot(g, x, y, z) { return g[0]*x + g[1]*y + g[2]*z; }
-        function contrib(g, x, y, z) {
-            const t = 0.6 - x*x - y*y - z*z;
-            return t < 0 ? 0 : t * t * t * t * dot(g, x, y, z);
-        }
-
         const gi0 = perm[ii + perm[jj + perm[kk]]] % 12;
         const gi1 = perm[ii+i1 + perm[jj+j1 + perm[kk+k1]]] % 12;
         const gi2 = perm[ii+i2 + perm[jj+j2 + perm[kk+k2]]] % 12;
         const gi3 = perm[ii+1 + perm[jj+1 + perm[kk+1]]] % 12;
 
         return 32 * (
-            contrib(grad3[gi0], x0, y0, z0) +
-            contrib(grad3[gi1], x1, y1, z1) +
-            contrib(grad3[gi2], x2, y2, z2) +
-            contrib(grad3[gi3], x3, y3, z3)
+            _contrib(grad3[gi0], x0, y0, z0) +
+            _contrib(grad3[gi1], x1, y1, z1) +
+            _contrib(grad3[gi2], x2, y2, z2) +
+            _contrib(grad3[gi3], x3, y3, z3)
         );
     };
 }
@@ -121,24 +122,20 @@ export function init(canvas, config) {
         ctx.lineJoin = 'round';
 
         for (let i = 0; i < config.waveCount; i++) {
-            const points = [];
+            const path = new Path2D();
+            let first = true;
             for (let x = 0; x < w; x += step) {
                 const px = x / scale;
                 const y = noise(px / 800, 0.3 * i, nt) * 100 * scale + h * 0.5;
-                points.push([x, y]);
+                if (first) { path.moveTo(x, y); first = false; }
+                else { path.lineTo(x, y); }
             }
 
             ctx.strokeStyle = config.colors[i % config.colors.length];
             for (const layer of layers) {
                 ctx.globalAlpha = layer.alpha;
                 ctx.lineWidth = layer.width;
-                ctx.beginPath();
-                let first = true;
-                for (const [px, py] of points) {
-                    if (first) { ctx.moveTo(px, py); first = false; }
-                    else { ctx.lineTo(px, py); }
-                }
-                ctx.stroke();
+                ctx.stroke(path);
             }
         }
 
