@@ -3,7 +3,6 @@ name: Deploy Demo to GitHub Pages
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,8 +15,8 @@ concurrency:
 
 jobs:
   deploy:
-    # Only deploy for stable releases (skip beta, rc, preview tags); always run on manual dispatch
-    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.ref_name, '-') }}
+    # Only deploy for stable releases (skip beta, rc, preview tags)
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
