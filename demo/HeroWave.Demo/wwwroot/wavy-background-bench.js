@@ -244,7 +244,7 @@ export function init(canvas, config) {
     animationFrameId = requestAnimationFrame(draw);
 
     instances.set(id, {
-        animationFrameId,
+        get animationFrameId() { return animationFrameId; },
         resize,
         canvas,
         opts,
