@@ -77,13 +77,36 @@ export function init(canvas, config) {
     const noise = createNoise();
     let nt = 0;
     let animationFrameId = null;
-
-    const speedFactor = config.speed === "fast" ? 0.008 : 0.004;
     let running = true;
 
+    const scale = 0.25;
+
+    const baseW = config.waveWidth;
+    const opacityScale = config.opacity / 0.5;
+
+    const layerDefs = [
+        { widthMul: 2.4, baseAlpha: 0.02 },
+        { widthMul: 2.2, baseAlpha: 0.03 },
+        { widthMul: 2.0, baseAlpha: 0.04 },
+        { widthMul: 1.8, baseAlpha: 0.05 },
+        { widthMul: 1.6, baseAlpha: 0.06 },
+        { widthMul: 1.4, baseAlpha: 0.07 },
+        { widthMul: 1.2, baseAlpha: 0.08 },
+        { widthMul: 1.0, baseAlpha: 0.10 },
+        { widthMul: 0.8, baseAlpha: 0.12 },
+        { widthMul: 0.6, baseAlpha: 0.14 },
+    ];
+
+    const layers = layerDefs.map(l => ({
+        width: baseW * l.widthMul * scale,
+        alpha: Math.min(1, l.baseAlpha * opacityScale),
+    }));
+
+    const step = Math.max(3, Math.round(5 * scale));
+
     function resize() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
+        canvas.width = Math.round(canvas.offsetWidth * scale);
+        canvas.height = Math.round(canvas.offsetHeight * scale);
     }
 
     function draw() {
@@ -91,32 +114,36 @@ export function init(canvas, config) {
         const w = canvas.width;
         const h = canvas.height;
 
-        ctx.clearRect(0, 0, w, h);
+        ctx.globalAlpha = 1;
         ctx.fillStyle = config.backgroundColor;
         ctx.fillRect(0, 0, w, h);
-        ctx.globalAlpha = config.opacity;
-        ctx.filter = `blur(${config.blur}px)`;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
         for (let i = 0; i < config.waveCount; i++) {
-            ctx.beginPath();
-            ctx.strokeStyle = config.colors[i % config.colors.length];
-            ctx.lineWidth = config.waveWidth;
-
-            for (let x = 0; x < w; x += 5) {
-                const y = noise(x / 800, 0.3 * i, nt) * 100 + h * 0.5;
-                if (x === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
+            const points = [];
+            for (let x = 0; x < w; x += step) {
+                const px = x / scale;
+                const y = noise(px / 800, 0.3 * i, nt) * 100 * scale + h * 0.5;
+                points.push([x, y]);
             }
-            ctx.stroke();
-            ctx.closePath();
+
+            ctx.strokeStyle = config.colors[i % config.colors.length];
+            for (const layer of layers) {
+                ctx.globalAlpha = layer.alpha;
+                ctx.lineWidth = layer.width;
+                ctx.beginPath();
+                let first = true;
+                for (const [px, py] of points) {
+                    if (first) { ctx.moveTo(px, py); first = false; }
+                    else { ctx.lineTo(px, py); }
+                }
+                ctx.stroke();
+            }
         }
 
         ctx.globalAlpha = 1;
-        ctx.filter = "none";
-        nt += speedFactor;
+        nt += config.speed;
         animationFrameId = requestAnimationFrame(draw);
     }
 
