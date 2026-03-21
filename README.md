@@ -1,10 +1,16 @@
 # HeroWave
 
-[![CI](https://github.com/LiamBoyleNie/hero-wave/actions/workflows/ci.yml/badge.svg)](https://github.com/LiamBoyleNie/hero-wave/actions/workflows/ci.yml)
+[![CI](https://github.com/cartsp/hero-wave/actions/workflows/ci.yml/badge.svg)](https://github.com/cartsp/hero-wave/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/HeroWave.svg)](https://www.nuget.org/packages/HeroWave)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A reusable Blazor component for animated wavy background effects powered by HTML5 Canvas and simplex noise. Works as a hero section, full-page background, or any container background.
+
+![Hero section demo](assets/screenshots/hero.png)
+
+![Full page background](assets/screenshots/fullpage.png)
+
+![Color presets showcase](assets/screenshots/showcase.png)
 
 ## Installation
 
@@ -114,7 +120,7 @@ Add the namespace to your `_Imports.razor`:
 
 ```bash
 # Clone and build
-git clone https://github.com/LiamBoyleNie/hero-wave.git
+git clone https://github.com/cartsp/hero-wave.git
 cd hero-wave
 dotnet build
 
