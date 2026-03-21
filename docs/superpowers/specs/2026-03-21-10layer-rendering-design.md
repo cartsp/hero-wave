@@ -44,30 +44,47 @@ ctx.lineWidth = config.waveWidth;
 // single stroke per wave
 ```
 
-New approach:
+New approach — layer widths scale relative to `config.waveWidth`, layer alphas scale by `config.opacity`:
 ```javascript
 const s = scale;
-const layers = [
-  { width: 120 * s, alpha: 0.02 },
-  { width: 110 * s, alpha: 0.03 },
-  { width: 100 * s, alpha: 0.04 },
-  { width: 90 * s,  alpha: 0.05 },
-  { width: 80 * s,  alpha: 0.06 },
-  { width: 70 * s,  alpha: 0.07 },
-  { width: 60 * s,  alpha: 0.08 },
-  { width: 50 * s,  alpha: 0.10 },
-  { width: 40 * s,  alpha: 0.12 },
-  { width: 30 * s,  alpha: 0.14 },
+const baseW = config.waveWidth; // default 50
+const opacityScale = config.opacity / 0.5; // normalize to default 0.5
+
+const layerDefs = [
+  { widthMul: 2.4, baseAlpha: 0.02 },
+  { widthMul: 2.2, baseAlpha: 0.03 },
+  { widthMul: 2.0, baseAlpha: 0.04 },
+  { widthMul: 1.8, baseAlpha: 0.05 },
+  { widthMul: 1.6, baseAlpha: 0.06 },
+  { widthMul: 1.4, baseAlpha: 0.07 },
+  { widthMul: 1.2, baseAlpha: 0.08 },
+  { widthMul: 1.0, baseAlpha: 0.10 },
+  { widthMul: 0.8, baseAlpha: 0.12 },
+  { widthMul: 0.6, baseAlpha: 0.14 },
 ];
+
+const layers = layerDefs.map(l => ({
+  width: baseW * l.widthMul * s,
+  alpha: Math.min(1, l.baseAlpha * opacityScale),
+}));
 ```
 
 Each wave is drawn 10 times — widest/faintest first, narrowest/brightest last. The overlapping semi-transparent strokes create a gradual falloff that approximates the gaussian blur effect. No `ctx.filter`, no `ctx.shadowBlur`.
+
+The `config.blur` parameter is no longer used — the blur effect is produced by the layer spread. A console info message is logged if `config.blur` is set to a non-default value: `"[HeroWave] blur parameter has no effect — glow is produced by layered alpha rendering"`.
 
 #### 3. Wave path computation — compute once, draw 10 times
 
 To avoid computing simplex noise 10x per wave, pre-compute the path points for each wave, then iterate the layers using the same points:
 
 ```javascript
+// Background fill at full opacity (not affected by wave opacity)
+ctx.globalAlpha = 1;
+ctx.fillStyle = config.backgroundColor;
+ctx.fillRect(0, 0, w, h);
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+
 for (let i = 0; i < config.waveCount; i++) {
   const points = [];
   for (let x = 0; x < w; x += step) {
@@ -83,8 +100,11 @@ for (let i = 0; i < config.waveCount; i++) {
     ctx.beginPath();
     for (const [px, py] of points) { /* moveTo/lineTo */ }
     ctx.stroke();
+    // Note: closePath() intentionally removed — it draws a line back
+    // to the start of the path, which is not desired for open wave curves
   }
 }
+ctx.globalAlpha = 1;
 ```
 
 #### 4. Noise input scaling
@@ -120,12 +140,12 @@ Add `ctx.lineCap = 'round'` and `ctx.lineJoin = 'round'` for smoother visual app
 | Parameter | Current usage | New usage |
 |-----------|--------------|-----------|
 | `colors` | `ctx.strokeStyle` per wave | Same — `ctx.strokeStyle` per wave |
-| `backgroundColor` | `ctx.fillStyle` background | Same |
+| `backgroundColor` | `ctx.fillStyle` background | Same — filled at `globalAlpha = 1` (fix: current code incorrectly applies wave opacity to background) |
 | `waveCount` | Loop count | Same |
-| `waveWidth` | `ctx.lineWidth` directly | Used as base for layer width calculations (layers scale relative to it) |
-| `blur` | `ctx.filter = "blur(Npx)"` | Ignored — blur effect comes from layer spread |
+| `waveWidth` | `ctx.lineWidth` directly | Base for layer widths — widest layer is `waveWidth * 2.4 * scale`, narrowest is `waveWidth * 0.6 * scale` |
+| `blur` | `ctx.filter = "blur(Npx)"` | No longer used — glow comes from layer spread. Console info logged if non-default value set |
 | `speed` | `speedFactor` for time increment | Same |
-| `opacity` | `ctx.globalAlpha` | Baked into layer alphas (layers are calibrated to produce ~0.5 effective center opacity) |
+| `opacity` | `ctx.globalAlpha` applied globally | Scales all layer alphas proportionally — `layerAlpha * (opacity / 0.5)`. Default 0.5 produces the calibrated values |
 
 ### Layer alpha math
 
