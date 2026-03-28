@@ -4,7 +4,7 @@
 
 HeroWave is a working Blazor WASM wavy background component packaged as a Razor Class Library. It's functional and demoed, but lacks everything needed to publish as a public open-source NuGet package: package metadata, license, tests, CI/CD, documentation, and branding. This spec covers the full roadmap to make it publish-ready on nuget.org.
 
-**Repo:** https://github.com/LiamBoyleNie/hero-wave
+**Repo:** https://github.com/cartsp/hero-wave
 
 ## Decisions
 
@@ -41,9 +41,9 @@ Add to existing `<PropertyGroup>`:
 ```xml
 <PackageId>HeroWave</PackageId>
 <Authors>LiamBoyleNie</Authors>
-<Description>A reusable Blazor component for animated wavy background effects powered by canvas and simplex noise. Customizable colors, speed, blur, wave count, and more.</Description>
-<PackageProjectUrl>https://github.com/LiamBoyleNie/hero-wave</PackageProjectUrl>
-<RepositoryUrl>https://github.com/LiamBoyleNie/hero-wave</RepositoryUrl>
+<Description>A reusable Blazor component for animated wavy background effects powered by canvas and simplex noise. Customizable colors, speed, wave count, and more.</Description>
+<PackageProjectUrl>https://github.com/cartsp/hero-wave</PackageProjectUrl>
+<RepositoryUrl>https://github.com/cartsp/hero-wave</RepositoryUrl>
 <RepositoryType>git</RepositoryType>
 <PackageLicenseExpression>MIT</PackageLicenseExpression>
 <PackageTags>blazor;component;wavy;background;animation;canvas;wasm</PackageTags>

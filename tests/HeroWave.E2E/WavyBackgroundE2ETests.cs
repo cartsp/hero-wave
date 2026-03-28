@@ -107,9 +107,15 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
         var canvasBefore = await page.Locator("canvas").First.BoundingBoxAsync();
 
         await page.SetViewportSizeAsync(800, 600);
-        await Task.Delay(500); // Allow resize handler to fire
 
+        // Poll until canvas dimensions change, with timeout
         var canvasAfter = await page.Locator("canvas").First.BoundingBoxAsync();
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (canvasAfter!.Width == canvasBefore!.Width && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(100);
+            canvasAfter = await page.Locator("canvas").First.BoundingBoxAsync();
+        }
 
         Assert.NotNull(canvasBefore);
         Assert.NotNull(canvasAfter);
