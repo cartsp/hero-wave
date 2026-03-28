@@ -44,7 +44,7 @@ jobs:
         run: dotnet test tests/HeroWave.Tests/ --no-build -v normal
 
       - name: Install Playwright Browsers
-        run: pwsh tests/HeroWave.E2E/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium
+        run: pwsh tests/HeroWave.E2E/bin/Debug/net10.0/playwright.ps1 install chromium
 
       - name: E2E Tests (Playwright)
         run: dotnet test tests/HeroWave.E2E/ --no-build -v normal
