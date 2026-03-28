@@ -85,6 +85,9 @@ export function init(canvas, config) {
     const baseW = config.waveWidth;
     const opacityScale = config.opacity / 0.5;
 
+    // Guard against empty colors array
+    const colors = config.colors?.length ? config.colors : ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"];
+
     const layerDefs = [
         { widthMul: 2.4, baseAlpha: 0.02 },
         { widthMul: 2.2, baseAlpha: 0.03 },
@@ -131,7 +134,7 @@ export function init(canvas, config) {
                 else { path.lineTo(x, y); }
             }
 
-            ctx.strokeStyle = config.colors[i % config.colors.length];
+            ctx.strokeStyle = colors[i % colors.length];
             for (const layer of layers) {
                 ctx.globalAlpha = layer.alpha;
                 ctx.lineWidth = layer.width;
