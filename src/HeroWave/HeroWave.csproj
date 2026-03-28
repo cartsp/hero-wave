@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
@@ -20,8 +20,11 @@
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 
+  <!-- Use the matching ASP.NET Core shared framework version per TFM -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.*" Condition="'$(TargetFramework)' == 'net8.0'" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.*" Condition="'$(TargetFramework)' == 'net9.0'" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.*" Condition="'$(TargetFramework)' == 'net10.0'" />
     <PackageReference Include="MinVer" Version="6.*" PrivateAssets="All" />
   </ItemGroup>
 
