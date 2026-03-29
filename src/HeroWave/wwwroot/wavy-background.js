@@ -117,6 +117,8 @@ export function init(canvas, config) {
         if (!running) return;
         const w = canvas.width;
         const h = canvas.height;
+        const amplitude = 100 * scale;
+        const yCenter = h * 0.5;
 
         ctx.globalAlpha = 1;
         ctx.fillStyle = config.backgroundColor;
@@ -129,7 +131,7 @@ export function init(canvas, config) {
             let first = true;
             for (let x = 0; x < w; x += step) {
                 const px = x / scale;
-                const y = noise(px / 800, 0.3 * i, nt) * 100 * scale + h * 0.5;
+                const y = noise(px / 800, 0.3 * i, nt) * amplitude + yCenter;
                 if (first) { path.moveTo(x, y); first = false; }
                 else { path.lineTo(x, y); }
             }
@@ -137,8 +139,6 @@ export function init(canvas, config) {
             const color = colors[i % colors.length];
 
             if (config.gradient === 'vertical') {
-                const amplitude = 100 * scale;
-                const yCenter = h * 0.5;
                 const gradient = ctx.createLinearGradient(0, yCenter - amplitude, 0, yCenter + amplitude);
                 gradient.addColorStop(0, color + '00');
                 gradient.addColorStop(0.5, color + 'cc');

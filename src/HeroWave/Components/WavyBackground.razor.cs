@@ -3,9 +3,15 @@ using Microsoft.JSInterop;
 
 namespace HeroWave.Components;
 
+/// <summary>
+/// Controls how wave strokes are filled.
+/// </summary>
 public enum GradientMode
 {
+    /// <summary>Waves use a flat solid color.</summary>
     Solid,
+
+    /// <summary>Waves use a vertical linear gradient that fades at the edges.</summary>
     Vertical
 }
 
@@ -74,7 +80,6 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
 
     /// <summary>
     /// Gradient mode for wave rendering. Defaults to <c>GradientMode.Solid</c>.
-    /// Set to <c>GradientMode.Vertical</c> for an ethereal glow effect.
     /// </summary>
     [Parameter] public GradientMode Gradient { get; set; } = GradientMode.Solid;
 
