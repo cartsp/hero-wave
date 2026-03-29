@@ -12,7 +12,6 @@ public class WavyBackgroundTests : BunitContext
 
     public WavyBackgroundTests()
     {
-        // Set up JSInterop to handle the module import and init/dispose calls
         _moduleInterop = JSInterop.SetupModule("./_content/HeroWave/wavy-background.js");
         _moduleInterop.Setup<string>("init", _ => true).SetResult("test-instance-0");
         _moduleInterop.SetupVoid("dispose", _ => true);
@@ -203,7 +202,7 @@ public class WavyBackgroundTests : BunitContext
             WavePresets.NeonCyberpunk,
             WavePresets.MinimalFrost,
             WavePresets.NorthernLights,
-            WavePresets.MoltenGold,
+            WavePresets.MoltenGold
         };
 
         foreach (var preset in presets)
@@ -222,7 +221,6 @@ public class WavyBackgroundTests : BunitContext
         var custom = WavePresets.OceanAurora with { Speed = 0.01, WaveCount = 10 };
         Assert.Equal(0.01, custom.Speed);
         Assert.Equal(10, custom.WaveCount);
-        // Original is unchanged
         Assert.Equal(0.004, WavePresets.OceanAurora.Speed);
         Assert.Equal(6, WavePresets.OceanAurora.WaveCount);
     }
