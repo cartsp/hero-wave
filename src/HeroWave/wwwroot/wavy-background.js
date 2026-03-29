@@ -134,7 +134,19 @@ export function init(canvas, config) {
                 else { path.lineTo(x, y); }
             }
 
-            ctx.strokeStyle = colors[i % colors.length];
+            const color = colors[i % colors.length];
+
+            if (config.gradient === 'vertical') {
+                const amplitude = 100 * scale;
+                const yCenter = h * 0.5;
+                const gradient = ctx.createLinearGradient(0, yCenter - amplitude, 0, yCenter + amplitude);
+                gradient.addColorStop(0, color + '00');
+                gradient.addColorStop(0.5, color + 'cc');
+                gradient.addColorStop(1, color + '00');
+                ctx.strokeStyle = gradient;
+            } else {
+                ctx.strokeStyle = color;
+            }
             for (const layer of layers) {
                 ctx.globalAlpha = layer.alpha;
                 ctx.lineWidth = layer.width;

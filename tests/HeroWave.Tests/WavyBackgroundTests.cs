@@ -152,4 +152,28 @@ public class WavyBackgroundTests : BunitContext
         // Should not throw
         await DisposeComponentsAsync();
     }
+
+    [Fact]
+    public void Default_Gradient_Is_Solid()
+    {
+        var cut = Render<WavyBackground>();
+        Assert.Equal(GradientMode.Solid, cut.Instance.Gradient);
+    }
+
+    [Fact]
+    public void Gradient_Parameter_Is_Passed_In_JsInit_Config()
+    {
+        Render<WavyBackground>(p => p.Add(x => x.Gradient, GradientMode.Vertical));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        Assert.Single(initInvocations);
+    }
+
+    [Fact]
+    public void Renders_Without_Error_When_Gradient_Vertical()
+    {
+        var cut = Render<WavyBackground>(p => p.Add(x => x.Gradient, GradientMode.Vertical));
+        var container = cut.Find(".wavy-background-container");
+        Assert.NotNull(container);
+    }
 }

@@ -3,6 +3,12 @@ using Microsoft.JSInterop;
 
 namespace HeroWave.Components;
 
+public enum GradientMode
+{
+    Solid,
+    Vertical
+}
+
 public partial class WavyBackground : ComponentBase, IAsyncDisposable
 {
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -66,6 +72,12 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter] public string? CssClass { get; set; }
 
+    /// <summary>
+    /// Gradient mode for wave rendering. Defaults to <c>GradientMode.Solid</c>.
+    /// Set to <c>GradientMode.Vertical</c> for an ethereal glow effect.
+    /// </summary>
+    [Parameter] public GradientMode Gradient { get; set; } = GradientMode.Solid;
+
     private ElementReference _canvas;
     private IJSObjectReference? _module;
     private string? _instanceId;
@@ -84,7 +96,8 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
             waveCount = WaveCount,
             waveWidth = WaveWidth,
             speed = Speed,
-            opacity = Opacity
+            opacity = Opacity,
+            gradient = Gradient.ToString().ToLowerInvariant()
         };
 
         _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
