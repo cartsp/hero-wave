@@ -165,6 +165,9 @@ public class WavyBackgroundTests : BunitContext
         var cut = Render<WavyBackground>(p =>
             p.Add(x => x.Preset, WavePresets.OceanAurora));
 
+        // Colors getter should resolve to preset colors when no override is set
+        Assert.Equal(WavePresets.OceanAurora.Colors, cut.Instance.Colors);
+
         var initInvocations = _moduleInterop.Invocations["init"];
         Assert.Single(initInvocations);
     }

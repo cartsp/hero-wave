@@ -37,36 +37,78 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     /// </example>
     [Parameter] public WavePresetConfig? Preset { get; set; }
 
+    private string[]? _colorsOverride;
+
     /// <summary>
     /// CSS color strings for each wave, cycled if fewer than <see cref="WavePresetConfig.WaveCount"/>.
     /// When set, overrides the preset value.
     /// </summary>
-    [Parameter] public string[]? Colors { get; set; }
+    [Parameter]
+    public string[] Colors
+    {
+        get => _colorsOverride ?? Preset?.Colors ?? Defaults.Colors;
+        set => _colorsOverride = value;
+    }
+
+    private string? _backgroundColorOverride;
 
     /// <summary>
     /// Background color of the canvas. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public string? BackgroundColor { get; set; }
+    [Parameter]
+    public string BackgroundColor
+    {
+        get => _backgroundColorOverride ?? Preset?.BackgroundColor ?? Defaults.BackgroundColor;
+        set => _backgroundColorOverride = value;
+    }
+
+    private int? _waveCountOverride;
 
     /// <summary>
     /// Number of wave lines to render. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public int? WaveCount { get; set; }
+    [Parameter]
+    public int WaveCount
+    {
+        get => _waveCountOverride ?? Preset?.WaveCount ?? Defaults.WaveCount;
+        set => _waveCountOverride = value;
+    }
+
+    private int? _waveWidthOverride;
 
     /// <summary>
     /// Base stroke width of each wave in CSS pixels. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public int? WaveWidth { get; set; }
+    [Parameter]
+    public int WaveWidth
+    {
+        get => _waveWidthOverride ?? Preset?.WaveWidth ?? Defaults.WaveWidth;
+        set => _waveWidthOverride = value;
+    }
+
+    private double? _speedOverride;
 
     /// <summary>
     /// Animation speed — higher values produce faster waves. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public double? Speed { get; set; }
+    [Parameter]
+    public double Speed
+    {
+        get => _speedOverride ?? Preset?.Speed ?? Defaults.Speed;
+        set => _speedOverride = value;
+    }
+
+    private double? _opacityOverride;
 
     /// <summary>
     /// Wave opacity multiplier (0.0 – 1.0). When set, overrides the preset value.
     /// </summary>
-    [Parameter] public double? Opacity { get; set; }
+    [Parameter]
+    public double Opacity
+    {
+        get => _opacityOverride ?? Preset?.Opacity ?? Defaults.Opacity;
+        set => _opacityOverride = value;
+    }
 
     /// <summary>
     /// Optional CSS class applied to the text overlay container.
@@ -79,13 +121,6 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
 
     private static readonly WavePresetConfig Defaults = new();
 
-    private string[] ResolvedColors => Colors ?? Preset?.Colors ?? Defaults.Colors;
-    private string ResolvedBackgroundColor => BackgroundColor ?? Preset?.BackgroundColor ?? Defaults.BackgroundColor;
-    private int ResolvedWaveCount => WaveCount ?? Preset?.WaveCount ?? Defaults.WaveCount;
-    private int ResolvedWaveWidth => WaveWidth ?? Preset?.WaveWidth ?? Defaults.WaveWidth;
-    private double ResolvedSpeed => Speed ?? Preset?.Speed ?? Defaults.Speed;
-    private double ResolvedOpacity => Opacity ?? Preset?.Opacity ?? Defaults.Opacity;
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -95,12 +130,12 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
 
         var config = new
         {
-            colors = ResolvedColors,
-            backgroundColor = ResolvedBackgroundColor,
-            waveCount = ResolvedWaveCount,
-            waveWidth = ResolvedWaveWidth,
-            speed = ResolvedSpeed,
-            opacity = ResolvedOpacity
+            colors = Colors,
+            backgroundColor = BackgroundColor,
+            waveCount = WaveCount,
+            waveWidth = WaveWidth,
+            speed = Speed,
+            opacity = Opacity
         };
 
         _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
