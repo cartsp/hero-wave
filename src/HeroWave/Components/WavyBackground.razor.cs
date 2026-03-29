@@ -75,6 +75,7 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     private ElementReference _canvas;
     private IJSObjectReference? _module;
     private string? _instanceId;
+    private string? _previousConfigHash;
 
     private object BuildConfig() => new
     {
@@ -87,6 +88,19 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
         targetFps = TargetFps
     };
 
+    private string ComputeConfigHash()
+    {
+        var hash = new HashCode();
+        foreach (var c in Colors) hash.Add(c);
+        hash.Add(BackgroundColor);
+        hash.Add(WaveCount);
+        hash.Add(WaveWidth);
+        hash.Add(Speed);
+        hash.Add(Opacity);
+        hash.Add(TargetFps);
+        return hash.ToHashCode().ToString();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -95,11 +109,16 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
             "import", "./_content/HeroWave/wavy-background.js");
 
         _instanceId = await _module.InvokeAsync<string>("init", _canvas, BuildConfig());
+        _previousConfigHash = ComputeConfigHash();
     }
 
     protected override async Task OnParametersSetAsync()
     {
         if (_module is null || _instanceId is null) return;
+
+        var currentHash = ComputeConfigHash();
+        if (currentHash == _previousConfigHash) return;
+        _previousConfigHash = currentHash;
 
         try
         {
