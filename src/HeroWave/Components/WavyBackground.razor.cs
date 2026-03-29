@@ -29,37 +29,86 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     [Parameter] public string Height { get; set; } = "100vh";
 
     /// <summary>
-    /// Array of CSS color strings used for each wave. Defaults to a blue-purple palette.
-    /// Colors are cycled if there are fewer colors than waves.
+    /// Apply a named preset configuration. Individual parameters below override
+    /// the preset values when explicitly set.
     /// </summary>
-    [Parameter] public string[] Colors { get; set; } =
-        ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"];
+    /// <example>
+    /// <code>&lt;WavyBackground Preset="WavePresets.OceanAurora" Speed="0.008" /&gt;</code>
+    /// </example>
+    [Parameter] public WavePresetConfig? Preset { get; set; }
+
+    private string[]? _colorsOverride;
 
     /// <summary>
-    /// Background color of the canvas. Defaults to <c>"#0c0c14"</c> (dark).
+    /// CSS color strings for each wave, cycled if fewer than <see cref="WavePresetConfig.WaveCount"/>.
+    /// When set, overrides the preset value.
     /// </summary>
-    [Parameter] public string BackgroundColor { get; set; } = "#0c0c14";
+    [Parameter]
+    public string[] Colors
+    {
+        get => _colorsOverride ?? Preset?.Colors ?? Defaults.Colors;
+        set => _colorsOverride = value;
+    }
+
+    private string? _backgroundColorOverride;
 
     /// <summary>
-    /// Number of wave lines to render. Defaults to <c>5</c>.
+    /// Background color of the canvas. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public int WaveCount { get; set; } = 5;
+    [Parameter]
+    public string BackgroundColor
+    {
+        get => _backgroundColorOverride ?? Preset?.BackgroundColor ?? Defaults.BackgroundColor;
+        set => _backgroundColorOverride = value;
+    }
+
+    private int? _waveCountOverride;
 
     /// <summary>
-    /// Base stroke width of each wave in CSS pixels. Defaults to <c>50</c>.
+    /// Number of wave lines to render. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public int WaveWidth { get; set; } = 50;
+    [Parameter]
+    public int WaveCount
+    {
+        get => _waveCountOverride ?? Preset?.WaveCount ?? Defaults.WaveCount;
+        set => _waveCountOverride = value;
+    }
+
+    private int? _waveWidthOverride;
 
     /// <summary>
-    /// Animation speed. Defaults to <c>0.004</c>. Higher values = faster waves.
+    /// Base stroke width of each wave in CSS pixels. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public double Speed { get; set; } = 0.004;
+    [Parameter]
+    public int WaveWidth
+    {
+        get => _waveWidthOverride ?? Preset?.WaveWidth ?? Defaults.WaveWidth;
+        set => _waveWidthOverride = value;
+    }
+
+    private double? _speedOverride;
 
     /// <summary>
-    /// Wave opacity multiplier. Defaults to <c>0.5</c>.
-    /// Controls the overall visibility of the waves.
+    /// Animation speed — higher values produce faster waves. When set, overrides the preset value.
     /// </summary>
-    [Parameter] public double Opacity { get; set; } = 0.5;
+    [Parameter]
+    public double Speed
+    {
+        get => _speedOverride ?? Preset?.Speed ?? Defaults.Speed;
+        set => _speedOverride = value;
+    }
+
+    private double? _opacityOverride;
+
+    /// <summary>
+    /// Wave opacity multiplier (0.0 – 1.0). When set, overrides the preset value.
+    /// </summary>
+    [Parameter]
+    public double Opacity
+    {
+        get => _opacityOverride ?? Preset?.Opacity ?? Defaults.Opacity;
+        set => _opacityOverride = value;
+    }
 
     /// <summary>
     /// Optional CSS class applied to the text overlay container.
@@ -69,6 +118,8 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     private ElementReference _canvas;
     private IJSObjectReference? _module;
     private string? _instanceId;
+
+    private static readonly WavePresetConfig Defaults = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -92,21 +143,14 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_module is not null && _instanceId is not null)
+        if (_module is null) return;
+
+        if (_instanceId is not null)
         {
-            try
-            {
-                await _module.InvokeVoidAsync("dispose", _instanceId);
-            }
-            catch (JSDisconnectedException)
-            {
-                // Circuit may already be gone during app shutdown
-            }
+            try { await _module.InvokeVoidAsync("dispose", _instanceId); }
+            catch (JSDisconnectedException) { }
         }
 
-        if (_module is not null)
-        {
-            await _module.DisposeAsync();
-        }
+        await _module.DisposeAsync();
     }
 }
