@@ -125,20 +125,19 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_module is not null && _instanceId is not null)
-        {
-            try
-            {
-                await _module.InvokeVoidAsync("dispose", _instanceId);
-            }
-            catch (JSDisconnectedException)
-            {
-                // Circuit may already be gone during app shutdown
-            }
-        }
-
         if (_module is not null)
         {
+            if (_instanceId is not null)
+            {
+                try
+                {
+                    await _module.InvokeVoidAsync("dispose", _instanceId);
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Circuit may already be gone during app shutdown
+                }
+            }
             await _module.DisposeAsync();
         }
     }

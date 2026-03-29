@@ -110,7 +110,6 @@ export function init(canvas, config) {
 
     // Reduced-motion support
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let reducedMotionActive = false;
 
     function shouldAnimate() {
         const behavior = config.reducedMotion || 'respectSystemPreference';
@@ -177,12 +176,8 @@ export function init(canvas, config) {
 
     // Listen for runtime changes to the reduced-motion preference
     const motionChangeHandler = () => {
-        const shouldNowAnimate = shouldAnimate();
-        if (shouldNowAnimate && animationFrameId === null) {
-            startAnimation();
-        } else if (!shouldNowAnimate && animationFrameId !== null) {
-            stopAnimation();
-        }
+        if (shouldAnimate()) startAnimation();
+        else stopAnimation();
     };
 
     motionQuery.addEventListener('change', motionChangeHandler);
@@ -191,7 +186,7 @@ export function init(canvas, config) {
     window.addEventListener("resize", resize);
 
     if (shouldAnimate()) {
-        animationFrameId = requestAnimationFrame(animate);
+        startAnimation();
     } else {
         // Draw a single static frame
         drawFrame();
