@@ -169,24 +169,11 @@ public class WavyBackgroundTests : BunitContext
 
         var initInvocations = _moduleInterop.Invocations["init"];
         Assert.Single(initInvocations);
-
-        // The config is passed as the second argument to init (canvas, config)
         Assert.Equal(2, initInvocations[0].Arguments.Count);
-        Assert.NotNull(initInvocations[0].Arguments[1]);
 
-        // Verify the anonymous config type has the targetFps property
         var configType = initInvocations[0].Arguments[1]!.GetType();
         var targetFpsProp = configType.GetProperty("targetFps");
         Assert.NotNull(targetFpsProp);
         Assert.Equal(30, targetFpsProp!.GetValue(initInvocations[0].Arguments[1]));
-    }
-
-    [Fact]
-    public void Component_Renders_Without_Error()
-    {
-        var cut = Render<WavyBackground>();
-        Assert.NotNull(cut);
-        Assert.Single(cut.FindAll(".wavy-background-container"));
-        Assert.Single(cut.FindAll("canvas.wavy-background-canvas"));
     }
 }

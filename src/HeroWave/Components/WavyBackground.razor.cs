@@ -76,6 +76,17 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     private IJSObjectReference? _module;
     private string? _instanceId;
 
+    private object BuildConfig() => new
+    {
+        colors = Colors,
+        backgroundColor = BackgroundColor,
+        waveCount = WaveCount,
+        waveWidth = WaveWidth,
+        speed = Speed,
+        opacity = Opacity,
+        targetFps = TargetFps
+    };
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -83,43 +94,18 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
         _module = await JS.InvokeAsync<IJSObjectReference>(
             "import", "./_content/HeroWave/wavy-background.js");
 
-        var config = new
-        {
-            colors = Colors,
-            backgroundColor = BackgroundColor,
-            waveCount = WaveCount,
-            waveWidth = WaveWidth,
-            speed = Speed,
-            opacity = Opacity,
-            targetFps = TargetFps
-        };
-
-        _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
+        _instanceId = await _module.InvokeAsync<string>("init", _canvas, BuildConfig());
     }
 
     protected override async Task OnParametersSetAsync()
     {
         if (_module is null || _instanceId is null) return;
 
-        var newConfig = new
-        {
-            colors = Colors,
-            backgroundColor = BackgroundColor,
-            waveCount = WaveCount,
-            waveWidth = WaveWidth,
-            speed = Speed,
-            opacity = Opacity,
-            targetFps = TargetFps
-        };
-
         try
         {
-            await _module.InvokeVoidAsync("update", _instanceId, newConfig);
+            await _module.InvokeVoidAsync("update", _instanceId, BuildConfig());
         }
-        catch (JSDisconnectedException)
-        {
-            // Circuit may already be gone
-        }
+        catch (JSDisconnectedException) { }
     }
 
     public async ValueTask DisposeAsync()
@@ -130,10 +116,7 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
             {
                 await _module.InvokeVoidAsync("dispose", _instanceId);
             }
-            catch (JSDisconnectedException)
-            {
-                // Circuit may already be gone during app shutdown
-            }
+            catch (JSDisconnectedException) { }
         }
 
         if (_module is not null)
