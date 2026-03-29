@@ -96,32 +96,42 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     private ElementReference _canvas;
     private IJSObjectReference? _module;
     private string? _instanceId;
+    private ReducedMotionBehavior _lastReducedMotion;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
-
-        _module = await JS.InvokeAsync<IJSObjectReference>(
-            "import", "./_content/HeroWave/wavy-background.js");
-
-        var config = new
+        if (firstRender)
         {
-            colors = Colors,
-            backgroundColor = BackgroundColor,
-            waveCount = WaveCount,
-            waveWidth = WaveWidth,
-            speed = Speed,
-            opacity = Opacity,
-            reducedMotion = ReducedMotion switch
-            {
-                ReducedMotionBehavior.AlwaysAnimate => "alwaysAnimate",
-                ReducedMotionBehavior.AlwaysStatic => "alwaysStatic",
-                _ => "respectSystemPreference"
-            }
-        };
+            _module = await JS.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/HeroWave/wavy-background.js");
 
-        _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
+            var config = new
+            {
+                colors = Colors,
+                backgroundColor = BackgroundColor,
+                waveCount = WaveCount,
+                waveWidth = WaveWidth,
+                speed = Speed,
+                opacity = Opacity,
+                reducedMotion = MapReducedMotion(ReducedMotion)
+            };
+
+            _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
+            _lastReducedMotion = ReducedMotion;
+        }
+        else if (_module is not null && ReducedMotion != _lastReducedMotion)
+        {
+            await _module.InvokeVoidAsync("update", _instanceId, new { reducedMotion = MapReducedMotion(ReducedMotion) });
+            _lastReducedMotion = ReducedMotion;
+        }
     }
+
+    private static string MapReducedMotion(ReducedMotionBehavior behavior) => behavior switch
+    {
+        ReducedMotionBehavior.AlwaysAnimate => "alwaysAnimate",
+        ReducedMotionBehavior.AlwaysStatic => "alwaysStatic",
+        _ => "respectSystemPreference"
+    };
 
     public async ValueTask DisposeAsync()
     {

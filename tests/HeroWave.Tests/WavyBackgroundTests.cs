@@ -171,11 +171,11 @@ public class WavyBackgroundTests : BunitContext
     }
 
     [Fact]
-    public void Container_Has_Role_Presentation()
+    public void Container_Does_Not_Have_Role_Attribute()
     {
         var cut = Render<WavyBackground>();
         var container = cut.Find(".wavy-background-container");
-        Assert.Equal("presentation", container.GetAttribute("role"));
+        Assert.Null(container.GetAttribute("role"));
     }
 
     [Fact]
@@ -193,5 +193,32 @@ public class WavyBackgroundTests : BunitContext
         var prop = configType.GetProperty("reducedMotion");
         Assert.NotNull(prop);
         Assert.Equal("alwaysStatic", prop.GetValue(config));
+   }
+
+    [Fact]
+    public void AlwaysAnimate_Maps_To_Correct_String()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysAnimate));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        Assert.Single(initInvocations);
+        var config = initInvocations[0].Arguments[1];
+        var prop = config.GetType().GetProperty("reducedMotion");
+        Assert.Equal("alwaysAnimate", prop.GetValue(config));
     }
+
+    [Fact]
+    public void RespectSystemPreference_Maps_To_Correct_String()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.RespectSystemPreference));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        Assert.Single(initInvocations);
+        var config = initInvocations[0].Arguments[1];
+        var prop = config.GetType().GetProperty("reducedMotion");
+        Assert.Equal("respectSystemPreference", prop.GetValue(config));
+    }
+
 }

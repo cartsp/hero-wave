@@ -122,6 +122,9 @@ export function init(canvas, config) {
     function resize() {
         canvas.width = Math.round(canvas.offsetWidth * scale);
         canvas.height = Math.round(canvas.offsetHeight * scale);
+        if (animationFrameId === null) {
+            drawFrame();
+        }
     }
 
     function drawFrame() {
@@ -172,6 +175,8 @@ export function init(canvas, config) {
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
         }
+        nt = 0;
+        drawFrame();
     }
 
     // Listen for runtime changes to the reduced-motion preference
@@ -197,7 +202,10 @@ export function init(canvas, config) {
         resize,
         motionQuery,
         motionChangeHandler,
-        get animationFrameId() { return animationFrameId; },
+        shouldAnimate,
+        startAnimation,
+        stopAnimation,
+        updateConfig(newConfig) { Object.assign(config, newConfig); },
         stop() {
             running = false;
             if (animationFrameId !== null) {
@@ -220,4 +228,15 @@ export function dispose(id) {
     const ctx = instance.canvas.getContext("2d");
     if (ctx) ctx.clearRect(0, 0, instance.canvas.width, instance.canvas.height);
     instances.delete(id);
+}
+
+export function update(id, newConfig) {
+    const instance = instances.get(id);
+    if (!instance) return;
+    instance.updateConfig(newConfig);
+    if (instance.shouldAnimate()) {
+        instance.startAnimation();
+    } else {
+        instance.stopAnimation();
+    }
 }
