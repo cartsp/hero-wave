@@ -23,7 +23,7 @@ public class DemoAppFixture : IAsyncLifetime
             StartInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = $"run --project demo/HeroWave.Demo --urls {BaseUrl}",
+                Arguments = $"run --no-build --project demo/HeroWave.Demo --urls {BaseUrl}",
                 WorkingDirectory = FindSolutionRoot(),
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
