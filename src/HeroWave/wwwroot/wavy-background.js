@@ -217,10 +217,6 @@ export function init(canvas, config) {
         observer,
         debouncedResize,
         get animationFrameId() { return animationFrameId; },
-        set animationFrameId(value) { animationFrameId = value; },
-        get running() { return running; },
-        set running(value) { running = value; },
-        stop() { running = false; }
     };
 
     instances.set(id, instance);
@@ -232,17 +228,10 @@ export function update(id, newConfig) {
     if (!instance) return;
 
     const cfg = instance.config;
-    let needsLayerRebuild = false;
-
-    if (newConfig.colors !== undefined) cfg.colors = newConfig.colors;
-    if (newConfig.backgroundColor !== undefined) cfg.backgroundColor = newConfig.backgroundColor;
-    if (newConfig.waveCount !== undefined) cfg.waveCount = newConfig.waveCount;
-    if (newConfig.waveWidth !== undefined) { cfg.waveWidth = newConfig.waveWidth; needsLayerRebuild = true; }
-    if (newConfig.speed !== undefined) cfg.speed = newConfig.speed;
-    if (newConfig.opacity !== undefined) { cfg.opacity = newConfig.opacity; needsLayerRebuild = true; }
-    if (newConfig.targetFps !== undefined) cfg.targetFps = newConfig.targetFps;
-
-    if (needsLayerRebuild) {
+    for (const [key, val] of Object.entries(newConfig)) {
+        if (val !== undefined) cfg[key] = val;
+    }
+    if ('waveWidth' in newConfig || 'opacity' in newConfig) {
         layers = rebuildLayers();
     }
 }
@@ -251,23 +240,14 @@ export function dispose(id) {
     const instance = instances.get(id);
     if (!instance) return;
 
-    // Stop animation
     if (instance.animationFrameId) {
         cancelAnimationFrame(instance.animationFrameId);
     }
 
-    // Disconnect intersection observer
-    if (instance.observer) {
-        instance.observer.disconnect();
-    }
+    instance.observer.disconnect();
+    instance.debouncedResize._clear();
+    window.removeEventListener("resize", instance.debouncedResize);
 
-    // Remove debounced resize listener
-    if (instance.debouncedResize) {
-        instance.debouncedResize._clear();
-        window.removeEventListener("resize", instance.debouncedResize);
-    }
-
-    // Clear canvas
     const ctx = instance.canvas.getContext("2d");
     if (ctx) ctx.clearRect(0, 0, instance.canvas.width, instance.canvas.height);
 
