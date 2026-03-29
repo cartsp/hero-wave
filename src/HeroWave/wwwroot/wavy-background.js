@@ -72,6 +72,16 @@ function createNoise() {
 const instances = new Map();
 let nextId = 0;
 
+function debounce(fn, ms) {
+    let timer = null;
+    const debounced = function (...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => { timer = null; fn.apply(this, args); }, ms);
+    };
+    debounced._clear = () => { if (timer) { clearTimeout(timer); timer = null; } };
+    return debounced;
+}
+
 export function init(canvas, config) {
     const id = String(nextId++);
     const ctx = canvas.getContext("2d");
@@ -82,11 +92,22 @@ export function init(canvas, config) {
 
     const scale = 0.25;
 
-    const baseW = config.waveWidth;
-    const opacityScale = config.opacity / 0.5;
+    // Mutable config — can be updated via update()
+    const cfg = {
+        waveWidth: config.waveWidth,
+        opacity: config.opacity,
+        colors: config.colors?.length ? config.colors : ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"],
+        backgroundColor: config.backgroundColor,
+        waveCount: config.waveCount,
+        speed: config.speed,
+        targetFps: config.targetFps || 60
+    };
 
-    // Guard against empty colors array
-    const colors = config.colors?.length ? config.colors : ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"];
+    // FPS throttling state
+    const frameInterval = 1000 / cfg.targetFps;
+    let lastFrameTime = 0;
+
+    const opacityScale = cfg.opacity / 0.5;
 
     const layerDefs = [
         { widthMul: 2.4, baseAlpha: 0.02 },
@@ -101,10 +122,15 @@ export function init(canvas, config) {
         { widthMul: 0.6, baseAlpha: 0.14 },
     ];
 
-    const layers = layerDefs.map(l => ({
-        width: baseW * l.widthMul * scale,
-        alpha: Math.min(1, l.baseAlpha * opacityScale),
-    }));
+    let layers = rebuildLayers();
+
+    function rebuildLayers() {
+        const opacityScale = cfg.opacity / 0.5;
+        return layerDefs.map(l => ({
+            width: cfg.waveWidth * l.widthMul * scale,
+            alpha: Math.min(1, l.baseAlpha * opacityScale),
+        }));
+    }
 
     const step = Math.max(3, Math.round(5 * scale));
 
@@ -113,18 +139,26 @@ export function init(canvas, config) {
         canvas.height = Math.round(canvas.offsetHeight * scale);
     }
 
-    function draw() {
+    function draw(timestamp) {
         if (!running) return;
+
+        // FPS throttling: skip frame if not enough time has elapsed
+        if (timestamp - lastFrameTime < frameInterval) {
+            animationFrameId = requestAnimationFrame(draw);
+            return;
+        }
+        lastFrameTime = timestamp;
+
         const w = canvas.width;
         const h = canvas.height;
 
         ctx.globalAlpha = 1;
-        ctx.fillStyle = config.backgroundColor;
+        ctx.fillStyle = cfg.backgroundColor;
         ctx.fillRect(0, 0, w, h);
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        for (let i = 0; i < config.waveCount; i++) {
+        for (let i = 0; i < cfg.waveCount; i++) {
             const path = new Path2D();
             let first = true;
             for (let x = 0; x < w; x += step) {
@@ -134,7 +168,7 @@ export function init(canvas, config) {
                 else { path.lineTo(x, y); }
             }
 
-            ctx.strokeStyle = colors[i % colors.length];
+            ctx.strokeStyle = cfg.colors[i % cfg.colors.length];
             for (const layer of layers) {
                 ctx.globalAlpha = layer.alpha;
                 ctx.lineWidth = layer.width;
@@ -143,25 +177,89 @@ export function init(canvas, config) {
         }
 
         ctx.globalAlpha = 1;
-        nt += config.speed;
+        nt += cfg.speed;
         animationFrameId = requestAnimationFrame(draw);
     }
 
-    resize();
-    window.addEventListener("resize", resize);
-    animationFrameId = requestAnimationFrame(draw);
+    function startLoop() {
+        lastFrameTime = 0;
+        animationFrameId = requestAnimationFrame(draw);
+    }
 
-    instances.set(id, { animationFrameId, resize, canvas, stop: () => { running = false; } });
+    // Debounced resize (100ms)
+    const debouncedResize = debounce(resize, 100);
+
+    // IntersectionObserver: pause when not visible
+    const observer = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (!entry.isIntersecting) {
+                running = false;
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            } else {
+                running = true;
+                if (!animationFrameId) {
+                    startLoop();
+                }
+            }
+        }
+    }, { threshold: 0 });
+
+    observer.observe(canvas);
+
+    resize();
+    window.addEventListener("resize", debouncedResize);
+    startLoop();
+
+    instances.set(id, {
+        canvas,
+        config: cfg,
+        observer,
+        debouncedResize,
+        rebuildLayers
+    });
     return id;
+}
+
+export function update(id, newConfig) {
+    const instance = instances.get(id);
+    if (!instance) return;
+
+    const cfg = instance.config;
+    if (newConfig.colors !== undefined) cfg.colors = newConfig.colors;
+    if (newConfig.backgroundColor !== undefined) cfg.backgroundColor = newConfig.backgroundColor;
+    if (newConfig.waveCount !== undefined) cfg.waveCount = newConfig.waveCount;
+    if (newConfig.waveWidth !== undefined) cfg.waveWidth = newConfig.waveWidth;
+    if (newConfig.speed !== undefined) cfg.speed = newConfig.speed;
+    if (newConfig.opacity !== undefined) cfg.opacity = newConfig.opacity;
+    if (newConfig.targetFps !== undefined) cfg.targetFps = newConfig.targetFps;
 }
 
 export function dispose(id) {
     const instance = instances.get(id);
     if (!instance) return;
-    instance.stop();
-    cancelAnimationFrame(instance.animationFrameId);
-    window.removeEventListener("resize", instance.resize);
+
+    // Stop animation
+    if (instance.animationFrameId) {
+        cancelAnimationFrame(instance.animationFrameId);
+    }
+
+    // Disconnect intersection observer
+    if (instance.observer) {
+        instance.observer.disconnect();
+    }
+
+    // Remove debounced resize listener
+    if (instance.debouncedResize) {
+        instance.debouncedResize._clear();
+        window.removeEventListener("resize", instance.debouncedResize);
+    }
+
+    // Clear canvas
     const ctx = instance.canvas.getContext("2d");
     if (ctx) ctx.clearRect(0, 0, instance.canvas.width, instance.canvas.height);
+
     instances.delete(id);
 }

@@ -62,6 +62,12 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     [Parameter] public double Opacity { get; set; } = 0.5;
 
     /// <summary>
+    /// Target frames per second for the animation loop. Defaults to <c>60</c>.
+    /// Lower values reduce CPU/GPU usage on less capable devices.
+    /// </summary>
+    [Parameter] public int TargetFps { get; set; } = 60;
+
+    /// <summary>
     /// Optional CSS class applied to the text overlay container.
     /// </summary>
     [Parameter] public string? CssClass { get; set; }
@@ -84,10 +90,36 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
             waveCount = WaveCount,
             waveWidth = WaveWidth,
             speed = Speed,
-            opacity = Opacity
+            opacity = Opacity,
+            targetFps = TargetFps
         };
 
         _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_module is null || _instanceId is null) return;
+
+        var newConfig = new
+        {
+            colors = Colors,
+            backgroundColor = BackgroundColor,
+            waveCount = WaveCount,
+            waveWidth = WaveWidth,
+            speed = Speed,
+            opacity = Opacity,
+            targetFps = TargetFps
+        };
+
+        try
+        {
+            await _module.InvokeVoidAsync("update", _instanceId, newConfig);
+        }
+        catch (JSDisconnectedException)
+        {
+            // Circuit may already be gone
+        }
     }
 
     public async ValueTask DisposeAsync()
