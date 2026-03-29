@@ -211,13 +211,19 @@ export function init(canvas, config) {
     window.addEventListener("resize", debouncedResize);
     startLoop();
 
-    instances.set(id, {
+    const instance = {
         canvas,
         config: cfg,
         observer,
         debouncedResize,
-        rebuildLayers
-    });
+        get animationFrameId() { return animationFrameId; },
+        set animationFrameId(value) { animationFrameId = value; },
+        get running() { return running; },
+        set running(value) { running = value; },
+        stop() { running = false; }
+    };
+
+    instances.set(id, instance);
     return id;
 }
 
@@ -226,13 +232,19 @@ export function update(id, newConfig) {
     if (!instance) return;
 
     const cfg = instance.config;
+    let needsLayerRebuild = false;
+
     if (newConfig.colors !== undefined) cfg.colors = newConfig.colors;
     if (newConfig.backgroundColor !== undefined) cfg.backgroundColor = newConfig.backgroundColor;
     if (newConfig.waveCount !== undefined) cfg.waveCount = newConfig.waveCount;
-    if (newConfig.waveWidth !== undefined) cfg.waveWidth = newConfig.waveWidth;
+    if (newConfig.waveWidth !== undefined) { cfg.waveWidth = newConfig.waveWidth; needsLayerRebuild = true; }
     if (newConfig.speed !== undefined) cfg.speed = newConfig.speed;
-    if (newConfig.opacity !== undefined) cfg.opacity = newConfig.opacity;
+    if (newConfig.opacity !== undefined) { cfg.opacity = newConfig.opacity; needsLayerRebuild = true; }
     if (newConfig.targetFps !== undefined) cfg.targetFps = newConfig.targetFps;
+
+    if (needsLayerRebuild) {
+        layers = rebuildLayers();
+    }
 }
 
 export function dispose(id) {
