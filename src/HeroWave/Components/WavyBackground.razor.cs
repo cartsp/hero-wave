@@ -121,7 +121,8 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
         }
         else if (_module is not null && ReducedMotion != _lastReducedMotion)
         {
-            await _module.InvokeVoidAsync("update", _instanceId, new { reducedMotion = MapReducedMotion(ReducedMotion) });
+            // TODO: Make all parameters reactive (currently only ReducedMotion)
+            await _module.InvokeVoidAsync("update", _instanceId, MapReducedMotion(ReducedMotion));
             _lastReducedMotion = ReducedMotion;
         }
     }

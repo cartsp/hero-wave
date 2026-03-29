@@ -75,6 +75,7 @@ let nextId = 0;
 export function init(canvas, config) {
     const id = String(nextId++);
     const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("HeroWave: Unable to get 2D rendering context");
     const noise = createNoise();
     let nt = 0;
     let animationFrameId = null;
@@ -119,12 +120,16 @@ export function init(canvas, config) {
         return !motionQuery.matches;
     }
 
+    let resizeFrameId = null;
+
     function resize() {
         canvas.width = Math.round(canvas.offsetWidth * scale);
         canvas.height = Math.round(canvas.offsetHeight * scale);
-        if (animationFrameId === null) {
-            drawFrame();
-        }
+        // If animation is already running, the next frame will redraw.
+        // Only debounce a manual redraw when animation is stopped.
+        if (animationFrameId !== null) return;
+        cancelAnimationFrame(resizeFrameId);
+        resizeFrameId = requestAnimationFrame(drawFrame);
     }
 
     function drawFrame() {
@@ -175,7 +180,6 @@ export function init(canvas, config) {
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
         }
-        nt = 0;
         drawFrame();
     }
 
@@ -205,7 +209,7 @@ export function init(canvas, config) {
         shouldAnimate,
         startAnimation,
         stopAnimation,
-        updateConfig(newConfig) { Object.assign(config, newConfig); },
+        updateReducedMotion(value) { config.reducedMotion = value; },
         stop() {
             running = false;
             if (animationFrameId !== null) {
@@ -230,13 +234,10 @@ export function dispose(id) {
     instances.delete(id);
 }
 
-export function update(id, newConfig) {
+export function update(id, reducedMotionValue) {
     const instance = instances.get(id);
     if (!instance) return;
-    instance.updateConfig(newConfig);
-    if (instance.shouldAnimate()) {
-        instance.startAnimation();
-    } else {
-        instance.stopAnimation();
-    }
+    instance.updateReducedMotion(reducedMotionValue);
+    if (instance.shouldAnimate()) instance.startAnimation();
+    else instance.stopAnimation();
 }
