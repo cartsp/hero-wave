@@ -192,14 +192,22 @@ export function init(canvas, config) {
         drawFrame();
     }
 
-    instances.set(id, {
-        animationFrameId,
-        resize,
+    const instance = {
         canvas,
-        stop: () => { running = false; },
+        resize,
         motionQuery,
-        motionChangeHandler
-    });
+        motionChangeHandler,
+        get animationFrameId() { return animationFrameId; },
+        stop() {
+            running = false;
+            if (animationFrameId !== null) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+    };
+
+    instances.set(id, instance);
     return id;
 }
 
@@ -207,7 +215,6 @@ export function dispose(id) {
     const instance = instances.get(id);
     if (!instance) return;
     instance.stop();
-    cancelAnimationFrame(instance.animationFrameId);
     window.removeEventListener("resize", instance.resize);
     instance.motionQuery.removeEventListener("change", instance.motionChangeHandler);
     const ctx = instance.canvas.getContext("2d");
