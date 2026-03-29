@@ -16,6 +16,32 @@ function _contrib(g, x, y, z) {
     return t < 0 ? 0 : t * t * t * t * _dot(g, x, y, z);
 }
 
+// Convert any CSS color to "rgba(r, g, b, a)" for gradient color stops.
+// Handles 6-digit hex, 3-digit hex, and falls back to canvas parsing.
+function colorWithAlpha(color, alpha) {
+    // 6-digit hex: #RRGGBB
+    if (/^#[0-9a-f]{6}$/i.test(color)) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+    // 3-digit hex: #RGB
+    if (/^#[0-9a-f]{3}$/i.test(color)) {
+        const r = parseInt(color[1] + color[1], 16);
+        const g = parseInt(color[2] + color[2], 16);
+        const b = parseInt(color[3] + color[3], 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+    // For named colors, rgb(), hsl(), etc — use canvas to parse
+    const ctx2 = _tmpCtx || (_tmpCtx = document.createElement("canvas").getContext("2d"));
+    ctx2.fillStyle = color;
+    ctx2.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx2.getImageData(0, 0, 1, 1).data;
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+let _tmpCtx = null;
+
 function createNoise() {
     const perm = new Uint8Array(512);
     const p = new Uint8Array(256);
@@ -117,6 +143,8 @@ export function init(canvas, config) {
         if (!running) return;
         const w = canvas.width;
         const h = canvas.height;
+        const amplitude = 100 * scale;
+        const yCenter = h * 0.5;
 
         ctx.globalAlpha = 1;
         ctx.fillStyle = config.backgroundColor;
@@ -129,12 +157,22 @@ export function init(canvas, config) {
             let first = true;
             for (let x = 0; x < w; x += step) {
                 const px = x / scale;
-                const y = noise(px / 800, 0.3 * i, nt) * 100 * scale + h * 0.5;
+                const y = noise(px / 800, 0.3 * i, nt) * amplitude + yCenter;
                 if (first) { path.moveTo(x, y); first = false; }
                 else { path.lineTo(x, y); }
             }
 
-            ctx.strokeStyle = colors[i % colors.length];
+            const color = colors[i % colors.length];
+
+            if (config.gradient === 'vertical') {
+                const gradient = ctx.createLinearGradient(0, yCenter - amplitude, 0, yCenter + amplitude);
+                gradient.addColorStop(0, colorWithAlpha(color, 0));
+                gradient.addColorStop(0.5, colorWithAlpha(color, 0.8));
+                gradient.addColorStop(1, colorWithAlpha(color, 0));
+                ctx.strokeStyle = gradient;
+            } else {
+                ctx.strokeStyle = color;
+            }
             for (const layer of layers) {
                 ctx.globalAlpha = layer.alpha;
                 ctx.lineWidth = layer.width;
