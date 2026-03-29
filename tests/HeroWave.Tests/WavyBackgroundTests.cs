@@ -152,4 +152,78 @@ public class WavyBackgroundTests : BunitContext
         // Should not throw
         await DisposeComponentsAsync();
     }
+
+    [Fact]
+    public void Preset_Is_Null_By_Default()
+    {
+        var cut = Render<WavyBackground>();
+        Assert.Null(cut.Instance.Preset);
+    }
+
+    [Fact]
+    public void Preset_Colors_Are_Used_When_No_Explicit_Colors()
+    {
+        var cut = Render<WavyBackground>(p =>
+            p.Add(x => x.Preset, WavePresets.OceanAurora));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        Assert.Single(initInvocations);
+    }
+
+    [Fact]
+    public void Explicit_Colors_Override_Preset()
+    {
+        var overrideColors = new[] { "#ff0000", "#00ff00" };
+        var cut = Render<WavyBackground>(p => p
+            .Add(x => x.Preset, WavePresets.OceanAurora)
+            .Add(x => x.Colors, overrideColors));
+
+        Assert.Equal(overrideColors, cut.Instance.Colors);
+    }
+
+    [Fact]
+    public void WavePresets_Default_Matches_Component_Defaults()
+    {
+        var preset = WavePresets.Default;
+        Assert.Equal(5, preset.WaveCount);
+        Assert.Equal(50, preset.WaveWidth);
+        Assert.Equal(0.004, preset.Speed);
+        Assert.Equal(0.5, preset.Opacity);
+        Assert.Equal("#0c0c14", preset.BackgroundColor);
+    }
+
+    [Fact]
+    public void WavePresets_All_Have_NonEmpty_Colors()
+    {
+        var presets = new[]
+        {
+            WavePresets.Default,
+            WavePresets.OceanAurora,
+            WavePresets.SunsetFire,
+            WavePresets.NeonCyberpunk,
+            WavePresets.MinimalFrost,
+            WavePresets.NorthernLights,
+            WavePresets.MoltenGold,
+        };
+
+        foreach (var preset in presets)
+        {
+            Assert.NotEmpty(preset.Colors);
+            Assert.All(preset.Colors, c => Assert.NotEmpty(c));
+            Assert.True(preset.WaveCount > 0);
+            Assert.True(preset.Opacity > 0);
+            Assert.True(preset.Speed > 0);
+        }
+    }
+
+    [Fact]
+    public void Custom_Preset_Via_With_Clone()
+    {
+        var custom = WavePresets.OceanAurora with { Speed = 0.01, WaveCount = 10 };
+        Assert.Equal(0.01, custom.Speed);
+        Assert.Equal(10, custom.WaveCount);
+        // Original is unchanged
+        Assert.Equal(0.004, WavePresets.OceanAurora.Speed);
+        Assert.Equal(6, WavePresets.OceanAurora.WaveCount);
+    }
 }

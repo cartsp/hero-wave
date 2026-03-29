@@ -29,37 +29,51 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     [Parameter] public string Height { get; set; } = "100vh";
 
     /// <summary>
+    /// Apply a named preset configuration. Individual parameters below override
+    /// the preset values when explicitly set.
+    /// </summary>
+    /// <example>
+    /// <code>&lt;WavyBackground Preset="WavePresets.OceanAurora" Speed="0.008" /&gt;</code>
+    /// </example>
+    [Parameter] public WavePresetConfig? Preset { get; set; }
+
+    /// <summary>
     /// Array of CSS color strings used for each wave. Defaults to a blue-purple palette.
     /// Colors are cycled if there are fewer colors than waves.
+    /// Overrides the preset value when set explicitly.
     /// </summary>
-    [Parameter] public string[] Colors { get; set; } =
-        ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"];
+    [Parameter] public string[]? Colors { get; set; }
 
     /// <summary>
     /// Background color of the canvas. Defaults to <c>"#0c0c14"</c> (dark).
+    /// Overrides the preset value when set explicitly.
     /// </summary>
-    [Parameter] public string BackgroundColor { get; set; } = "#0c0c14";
+    [Parameter] public string? BackgroundColor { get; set; }
 
     /// <summary>
     /// Number of wave lines to render. Defaults to <c>5</c>.
+    /// Overrides the preset value when set explicitly.
     /// </summary>
-    [Parameter] public int WaveCount { get; set; } = 5;
+    [Parameter] public int? WaveCount { get; set; }
 
     /// <summary>
     /// Base stroke width of each wave in CSS pixels. Defaults to <c>50</c>.
+    /// Overrides the preset value when set explicitly.
     /// </summary>
-    [Parameter] public int WaveWidth { get; set; } = 50;
+    [Parameter] public int? WaveWidth { get; set; }
 
     /// <summary>
     /// Animation speed. Defaults to <c>0.004</c>. Higher values = faster waves.
+    /// Overrides the preset value when set explicitly.
     /// </summary>
-    [Parameter] public double Speed { get; set; } = 0.004;
+    [Parameter] public double? Speed { get; set; }
 
     /// <summary>
     /// Wave opacity multiplier. Defaults to <c>0.5</c>.
     /// Controls the overall visibility of the waves.
+    /// Overrides the preset value when set explicitly.
     /// </summary>
-    [Parameter] public double Opacity { get; set; } = 0.5;
+    [Parameter] public double? Opacity { get; set; }
 
     /// <summary>
     /// Optional CSS class applied to the text overlay container.
@@ -70,6 +84,17 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     private IJSObjectReference? _module;
     private string? _instanceId;
 
+    private string[] ResolvedColors =>
+        Colors ?? Preset?.Colors ?? ["#38bdf8", "#818cf8", "#c084fc", "#e879f9", "#22d3ee"];
+
+    private string ResolvedBackgroundColor =>
+        BackgroundColor ?? Preset?.BackgroundColor ?? "#0c0c14";
+
+    private int ResolvedWaveCount => WaveCount ?? Preset?.WaveCount ?? 5;
+    private int ResolvedWaveWidth => WaveWidth ?? Preset?.WaveWidth ?? 50;
+    private double ResolvedSpeed => Speed ?? Preset?.Speed ?? 0.004;
+    private double ResolvedOpacity => Opacity ?? Preset?.Opacity ?? 0.5;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -79,12 +104,12 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
 
         var config = new
         {
-            colors = Colors,
-            backgroundColor = BackgroundColor,
-            waveCount = WaveCount,
-            waveWidth = WaveWidth,
-            speed = Speed,
-            opacity = Opacity
+            colors = ResolvedColors,
+            backgroundColor = ResolvedBackgroundColor,
+            waveCount = ResolvedWaveCount,
+            waveWidth = ResolvedWaveWidth,
+            speed = ResolvedSpeed,
+            opacity = ResolvedOpacity
         };
 
         _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);
