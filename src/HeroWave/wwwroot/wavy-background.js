@@ -104,10 +104,7 @@ export function init(canvas, config) {
     };
 
     // FPS throttling state
-    const frameInterval = 1000 / cfg.targetFps;
     let lastFrameTime = 0;
-
-    const opacityScale = cfg.opacity / 0.5;
 
     const layerDefs = [
         { widthMul: 2.4, baseAlpha: 0.02 },
@@ -143,6 +140,7 @@ export function init(canvas, config) {
         if (!running) return;
 
         // FPS throttling: skip frame if not enough time has elapsed
+        const frameInterval = 1000 / cfg.targetFps;
         if (timestamp - lastFrameTime < frameInterval) {
             animationFrameId = requestAnimationFrame(draw);
             return;
