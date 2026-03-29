@@ -3,6 +3,27 @@ using Microsoft.JSInterop;
 
 namespace HeroWave.Components;
 
+/// <summary>
+/// Controls how the wave animation behaves with respect to reduced-motion preferences.
+/// </summary>
+public enum ReducedMotionBehavior
+{
+    /// <summary>
+    /// Automatically pauses animation when the user's OS/browser requests reduced motion.
+    /// </summary>
+    RespectSystemPreference,
+
+    /// <summary>
+    /// Always animate regardless of system preference.
+    /// </summary>
+    AlwaysAnimate,
+
+    /// <summary>
+    /// Never animate; render a single static frame.
+    /// </summary>
+    AlwaysStatic
+}
+
 public partial class WavyBackground : ComponentBase, IAsyncDisposable
 {
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -66,6 +87,12 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter] public string? CssClass { get; set; }
 
+    /// <summary>
+    /// Controls animation behavior for users who prefer reduced motion.
+    /// Defaults to <see cref="ReducedMotionBehavior.RespectSystemPreference"/>.
+    /// </summary>
+    [Parameter] public ReducedMotionBehavior ReducedMotion { get; set; } = ReducedMotionBehavior.RespectSystemPreference;
+
     private ElementReference _canvas;
     private IJSObjectReference? _module;
     private string? _instanceId;
@@ -84,7 +111,13 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
             waveCount = WaveCount,
             waveWidth = WaveWidth,
             speed = Speed,
-            opacity = Opacity
+            opacity = Opacity,
+            reducedMotion = ReducedMotion switch
+            {
+                ReducedMotionBehavior.AlwaysAnimate => "alwaysAnimate",
+                ReducedMotionBehavior.AlwaysStatic => "alwaysStatic",
+                _ => "respectSystemPreference"
+            }
         };
 
         _instanceId = await _module.InvokeAsync<string>("init", _canvas, config);

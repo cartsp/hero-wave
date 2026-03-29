@@ -152,4 +152,46 @@ public class WavyBackgroundTests : BunitContext
         // Should not throw
         await DisposeComponentsAsync();
     }
+
+    // --- Reduced-motion and ARIA accessibility tests (issue #11) ---
+
+    [Fact]
+    public void Default_ReducedMotion_Is_RespectSystemPreference()
+    {
+        var cut = Render<WavyBackground>();
+        Assert.Equal(ReducedMotionBehavior.RespectSystemPreference, cut.Instance.ReducedMotion);
+    }
+
+    [Fact]
+    public void Canvas_Has_AriaHidden_Attribute()
+    {
+        var cut = Render<WavyBackground>();
+        var canvas = cut.Find("canvas.wavy-background-canvas");
+        Assert.Equal("true", canvas.GetAttribute("aria-hidden"));
+    }
+
+    [Fact]
+    public void Container_Has_Role_Presentation()
+    {
+        var cut = Render<WavyBackground>();
+        var container = cut.Find(".wavy-background-container");
+        Assert.Equal("presentation", container.GetAttribute("role"));
+    }
+
+    [Fact]
+    public void ReducedMotion_Parameter_Is_Passed_In_JsConfig()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysStatic));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        Assert.Single(initInvocations);
+        var config = initInvocations[0].Arguments[1];
+        Assert.NotNull(config);
+        // The config is an anonymous object; verify the reducedMotion property exists
+        var configType = config.GetType();
+        var prop = configType.GetProperty("reducedMotion");
+        Assert.NotNull(prop);
+        Assert.Equal("alwaysStatic", prop.GetValue(config));
+    }
 }

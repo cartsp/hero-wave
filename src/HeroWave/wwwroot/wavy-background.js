@@ -108,13 +108,24 @@ export function init(canvas, config) {
 
     const step = Math.max(3, Math.round(5 * scale));
 
+    // Reduced-motion support
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reducedMotionActive = false;
+
+    function shouldAnimate() {
+        const behavior = config.reducedMotion || 'respectSystemPreference';
+        if (behavior === 'alwaysStatic') return false;
+        if (behavior === 'alwaysAnimate') return true;
+        // respectSystemPreference
+        return !motionQuery.matches;
+    }
+
     function resize() {
         canvas.width = Math.round(canvas.offsetWidth * scale);
         canvas.height = Math.round(canvas.offsetHeight * scale);
     }
 
-    function draw() {
-        if (!running) return;
+    function drawFrame() {
         const w = canvas.width;
         const h = canvas.height;
 
@@ -144,14 +155,56 @@ export function init(canvas, config) {
 
         ctx.globalAlpha = 1;
         nt += config.speed;
-        animationFrameId = requestAnimationFrame(draw);
     }
+
+    function animate() {
+        if (!running) return;
+        drawFrame();
+        animationFrameId = requestAnimationFrame(animate);
+    }
+
+    function startAnimation() {
+        if (animationFrameId !== null) return;
+        animate();
+    }
+
+    function stopAnimation() {
+        if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+    }
+
+    // Listen for runtime changes to the reduced-motion preference
+    const motionChangeHandler = () => {
+        const shouldNowAnimate = shouldAnimate();
+        if (shouldNowAnimate && animationFrameId === null) {
+            startAnimation();
+        } else if (!shouldNowAnimate && animationFrameId !== null) {
+            stopAnimation();
+        }
+    };
+
+    motionQuery.addEventListener('change', motionChangeHandler);
 
     resize();
     window.addEventListener("resize", resize);
-    animationFrameId = requestAnimationFrame(draw);
 
-    instances.set(id, { animationFrameId, resize, canvas, stop: () => { running = false; } });
+    if (shouldAnimate()) {
+        animationFrameId = requestAnimationFrame(animate);
+    } else {
+        // Draw a single static frame
+        drawFrame();
+    }
+
+    instances.set(id, {
+        animationFrameId,
+        resize,
+        canvas,
+        stop: () => { running = false; },
+        motionQuery,
+        motionChangeHandler
+    });
     return id;
 }
 
@@ -161,6 +214,7 @@ export function dispose(id) {
     instance.stop();
     cancelAnimationFrame(instance.animationFrameId);
     window.removeEventListener("resize", instance.resize);
+    instance.motionQuery.removeEventListener("change", instance.motionChangeHandler);
     const ctx = instance.canvas.getContext("2d");
     if (ctx) ctx.clearRect(0, 0, instance.canvas.width, instance.canvas.height);
     instances.delete(id);
