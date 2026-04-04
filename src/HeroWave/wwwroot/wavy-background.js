@@ -200,6 +200,7 @@ export function init(canvas, config) {
 
     function startLoop() {
         lastFrameTime = 0;
+        canvas.dataset.herowaveAnimating = 'true';
         animationFrameId = requestAnimationFrame(draw);
     }
 
@@ -213,6 +214,7 @@ export function init(canvas, config) {
             if (!animationFrameId) startLoop();
         } else {
             running = false;
+            canvas.dataset.herowaveAnimating = 'false';
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
@@ -227,6 +229,7 @@ export function init(canvas, config) {
         for (const entry of entries) {
             if (!entry.isIntersecting) {
                 running = false;
+                canvas.dataset.herowaveAnimating = 'false';
                 if (animationFrameId) {
                     cancelAnimationFrame(animationFrameId);
                     animationFrameId = null;
@@ -236,6 +239,7 @@ export function init(canvas, config) {
                     running = true;
                     if (!animationFrameId) startLoop();
                 } else {
+                    canvas.dataset.herowaveAnimating = 'false';
                     drawFrame();
                 }
             }
@@ -250,6 +254,7 @@ export function init(canvas, config) {
     if (shouldAnimate()) {
         startLoop();
     } else {
+        canvas.dataset.herowaveAnimating = 'false';
         drawFrame();
     }
 
@@ -268,6 +273,7 @@ export function init(canvas, config) {
                 if (!animationFrameId) startLoop();
             } else {
                 running = false;
+                canvas.dataset.herowaveAnimating = 'false';
                 if (animationFrameId) {
                     cancelAnimationFrame(animationFrameId);
                     animationFrameId = null;

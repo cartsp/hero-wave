@@ -241,28 +241,17 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
     }
 
     /// <summary>
-    /// Detects animation by comparing pixel checksums of a small canvas region across multiple samples.
-    /// Uses getImageData on a 50×50 region (cheaper than full toDataURL) with a simple sum checksum.
+    /// Checks animation state via the <c>data-herowave-animating</c> attribute on the canvas element.
+    /// This reads the JS internal state directly — more reliable than pixel-checksum diffing
+    /// in headless CI environments where canvas compositing may not produce visible frame changes.
     /// </summary>
-    private static async Task<bool> IsCanvasAnimatingAsync(IPage page, int sampleCount = 5, int intervalMs = 150)
+    private static async Task<bool> IsCanvasAnimatingAsync(IPage page)
     {
-        var checksums = new HashSet<string>();
-        for (int i = 0; i < sampleCount; i++)
-        {
-            await Task.Delay(intervalMs);
-            var checksum = await page.EvaluateAsync<string>(@"() => {
-                const c = document.querySelector('canvas');
-                const ctx = c.getContext('2d');
-                if (!ctx || c.width === 0 || c.height === 0) return 'empty';
-                const w = Math.min(c.width, 50);
-                const h = Math.min(c.height, 50);
-                const data = ctx.getImageData(0, 0, w, h).data;
-                let sum = 0;
-                for (let i = 0; i < data.length; i++) sum += data[i];
-                return sum.toString();
-            }");
-            checksums.Add(checksum);
-        }
-        return checksums.Count > 1;
+        // Wait for the attribute to exist (JS init must complete)
+        await page.WaitForFunctionAsync(
+            "document.querySelector('canvas')?.dataset.herowaveAnimating !== undefined",
+            new PageWaitForFunctionOptions { Timeout = 5_000 });
+        var value = await page.Locator("canvas").First.GetAttributeAsync("data-herowave-animating");
+        return value == "true";
     }
 }
