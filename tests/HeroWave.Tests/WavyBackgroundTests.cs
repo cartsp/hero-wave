@@ -273,18 +273,36 @@ public class WavyBackgroundTests : BunitContext
     {
         internal double Speed { get; private set; } = 0.004;
         internal string? Title { get; private set; }
+        internal ReducedMotionBehavior ReducedMotion { get; private set; } = ReducedMotionBehavior.RespectSystemPreference;
 
         public void ChangeSpeed(double speed) { Speed = speed; StateHasChanged(); }
         public void ChangeTitle(string? title) { Title = title; StateHasChanged(); }
+        public void ChangeReducedMotion(ReducedMotionBehavior mode) { ReducedMotion = mode; StateHasChanged(); }
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
             builder.OpenComponent<WavyBackground>(0);
             builder.AddComponentParameter(1, nameof(WavyBackground.Speed), Speed);
+            builder.AddComponentParameter(2, nameof(WavyBackground.ReducedMotion), ReducedMotion);
             if (Title is not null)
-                builder.AddComponentParameter(2, nameof(WavyBackground.Title), Title);
+                builder.AddComponentParameter(3, nameof(WavyBackground.Title), Title);
             builder.CloseComponent();
         }
+    }
+
+    [Fact]
+    public void OnParametersSetAsync_CallsUpdate_WhenReducedMotionChanges()
+    {
+        var host = Render<WavyBackgroundHost>();
+
+        host.InvokeAsync(() => host.Instance.ChangeReducedMotion(ReducedMotionBehavior.AlwaysStatic));
+
+        var updateInvocations = _moduleInterop.Invocations["update"];
+        Assert.Single(updateInvocations);
+
+        var configArg = updateInvocations[0].Arguments[1];
+        var prop = configArg.GetType().GetProperty("reducedMotion");
+        Assert.Equal("alwaysStatic", prop!.GetValue(configArg));
     }
 
     [Fact]
