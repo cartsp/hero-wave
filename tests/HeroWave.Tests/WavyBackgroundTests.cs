@@ -225,18 +225,25 @@ public class WavyBackgroundTests : BunitContext
         Assert.Null(container.GetAttribute("role"));
     }
 
+    /// <summary>
+    /// Extracts a named property from the anonymous config object passed to JS init.
+    /// Centralizes the reflection so config property tests have a single fragility point.
+    /// </summary>
+    private static string GetConfigProperty(object config, string propertyName)
+    {
+        var prop = config.GetType().GetProperty(propertyName)
+            ?? throw new InvalidOperationException($"Property '{propertyName}' not found on config object");
+        return (string)prop.GetValue(config)!;
+    }
+
     [Fact]
     public void ReducedMotion_AlwaysStatic_Maps_In_Config()
     {
         Render<WavyBackground>(p => p
             .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysStatic));
 
-        var initInvocations = _moduleInterop.Invocations["init"];
-        Assert.Single(initInvocations);
-        var config = initInvocations[0].Arguments[1];
-        var prop = config.GetType().GetProperty("reducedMotion");
-        Assert.NotNull(prop);
-        Assert.Equal("alwaysStatic", prop.GetValue(config));
+        var config = _moduleInterop.Invocations["init"][0].Arguments[1]!;
+        Assert.Equal("alwaysStatic", GetConfigProperty(config, "reducedMotion"));
     }
 
     [Fact]
@@ -245,10 +252,8 @@ public class WavyBackgroundTests : BunitContext
         Render<WavyBackground>(p => p
             .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysAnimate));
 
-        var initInvocations = _moduleInterop.Invocations["init"];
-        var config = initInvocations[0].Arguments[1];
-        var prop = config.GetType().GetProperty("reducedMotion");
-        Assert.Equal("alwaysAnimate", prop.GetValue(config));
+        var config = _moduleInterop.Invocations["init"][0].Arguments[1]!;
+        Assert.Equal("alwaysAnimate", GetConfigProperty(config, "reducedMotion"));
     }
 
     [Fact]
@@ -257,10 +262,8 @@ public class WavyBackgroundTests : BunitContext
         Render<WavyBackground>(p => p
             .Add(x => x.ReducedMotion, ReducedMotionBehavior.RespectSystemPreference));
 
-        var initInvocations = _moduleInterop.Invocations["init"];
-        var config = initInvocations[0].Arguments[1];
-        var prop = config.GetType().GetProperty("reducedMotion");
-        Assert.Equal("respectSystemPreference", prop.GetValue(config));
+        var config = _moduleInterop.Invocations["init"][0].Arguments[1]!;
+        Assert.Equal("respectSystemPreference", GetConfigProperty(config, "reducedMotion"));
     }
 
     /// <summary>

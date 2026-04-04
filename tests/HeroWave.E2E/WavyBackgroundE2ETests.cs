@@ -168,7 +168,7 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
         Assert.True(animatingBefore, "Canvas should be animating initially");
 
         await page.Locator("#btn-static").ClickAsync();
-        await page.WaitForTimeoutAsync(500);
+        await WaitForSubtitleAsync(page, "AlwaysStatic");
 
         var animatingAfter = await IsCanvasAnimatingAsync(page);
         Assert.False(animatingAfter, "Canvas should stop after clicking Static");
@@ -180,13 +180,13 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
         var page = await NavigateToAsync("a11y");
 
         await page.Locator("#btn-static").ClickAsync();
-        await page.WaitForTimeoutAsync(500);
+        await WaitForSubtitleAsync(page, "AlwaysStatic");
 
         var animatingWhileStatic = await IsCanvasAnimatingAsync(page);
         Assert.False(animatingWhileStatic, "Should be static");
 
         await page.Locator("#btn-animate").ClickAsync();
-        await page.WaitForTimeoutAsync(500);
+        await WaitForSubtitleAsync(page, "AlwaysAnimate");
 
         var animatingAfterResume = await IsCanvasAnimatingAsync(page);
         Assert.True(animatingAfterResume, "Should resume after clicking Animate");
@@ -202,21 +202,67 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
 
         await page.EmulateMediaAsync(new() { ReducedMotion = ReducedMotion.Reduce });
         await page.Locator("#btn-respect").ClickAsync();
-        await page.WaitForTimeoutAsync(500);
+        await WaitForSubtitleAsync(page, "RespectSystemPreference");
 
         var animatingAfter = await IsCanvasAnimatingAsync(page);
         Assert.False(animatingAfter, "Should stop when prefers-reduced-motion is active");
     }
 
-    private static async Task<bool> IsCanvasAnimatingAsync(IPage page, int sampleCount = 3)
+    [Fact]
+    public async Task A11y_AlwaysAnimate_Overrides_ReducedMotion()
     {
-        var snapshots = new List<string>();
+        var page = await NavigateToAsync("a11y");
+
+        // Enable system reduced-motion
+        await page.EmulateMediaAsync(new() { ReducedMotion = ReducedMotion.Reduce });
+        await page.Locator("#btn-respect").ClickAsync();
+        await WaitForSubtitleAsync(page, "RespectSystemPreference");
+
+        var animatingWhileReduced = await IsCanvasAnimatingAsync(page);
+        Assert.False(animatingWhileReduced, "Should be static when system prefers reduced-motion");
+
+        // Override with AlwaysAnimate — should animate despite system preference
+        await page.Locator("#btn-animate").ClickAsync();
+        await WaitForSubtitleAsync(page, "AlwaysAnimate");
+
+        var animatingAfterOverride = await IsCanvasAnimatingAsync(page);
+        Assert.True(animatingAfterOverride, "AlwaysAnimate should override prefers-reduced-motion");
+    }
+
+    /// <summary>
+    /// Waits for the Blazor subtitle to update with the given mode text.
+    /// More reliable than a hardcoded timeout — confirms the JS interop round-trip completed.
+    /// </summary>
+    private static async Task WaitForSubtitleAsync(IPage page, string modeText)
+    {
+        await page.WaitForFunctionAsync(
+            $"document.querySelector('.wavy-background-subtitle')?.textContent.includes('{modeText}')",
+            new PageWaitForFunctionOptions { Timeout = 10_000 });
+    }
+
+    /// <summary>
+    /// Detects animation by comparing pixel checksums of a small canvas region across multiple samples.
+    /// Uses getImageData on a 50×50 region (cheaper than full toDataURL) with a simple sum checksum.
+    /// </summary>
+    private static async Task<bool> IsCanvasAnimatingAsync(IPage page, int sampleCount = 5, int intervalMs = 150)
+    {
+        var checksums = new HashSet<string>();
         for (int i = 0; i < sampleCount; i++)
         {
-            await Task.Delay(200);
-            var dataUrl = await page.EvaluateAsync<string>("document.querySelector('canvas').toDataURL()");
-            snapshots.Add(dataUrl);
+            await Task.Delay(intervalMs);
+            var checksum = await page.EvaluateAsync<string>(@"() => {
+                const c = document.querySelector('canvas');
+                const ctx = c.getContext('2d');
+                if (!ctx || c.width === 0 || c.height === 0) return 'empty';
+                const w = Math.min(c.width, 50);
+                const h = Math.min(c.height, 50);
+                const data = ctx.getImageData(0, 0, w, h).data;
+                let sum = 0;
+                for (let i = 0; i < data.length; i++) sum += data[i];
+                return sum.toString();
+            }");
+            checksums.Add(checksum);
         }
-        return snapshots.Distinct().Count() > 1;
+        return checksums.Count > 1;
     }
 }

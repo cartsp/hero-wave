@@ -262,6 +262,19 @@ export function init(canvas, config) {
         motionChangeHandler,
         shouldAnimate,
         rebuildLayers: () => { layers = rebuildLayers(); },
+        applyMotionState() {
+            if (shouldAnimate()) {
+                running = true;
+                if (!animationFrameId) startLoop();
+            } else {
+                running = false;
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                drawFrame();
+            }
+        },
         stop: () => { running = false; },
         get animationFrameId() { return animationFrameId; },
     };
@@ -281,6 +294,9 @@ export function update(id, newConfig) {
     }
     if ('waveWidth' in newConfig || 'opacity' in newConfig) {
         instance.rebuildLayers();
+    }
+    if ('reducedMotion' in newConfig) {
+        instance.applyMotionState();
     }
 }
 
