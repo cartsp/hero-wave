@@ -78,29 +78,18 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     private string? _instanceId;
     private string? _previousConfigHash;
 
-    private object BuildConfig() => new
+    private WavyBackgroundConfig BuildConfig() => new()
     {
-        colors = Colors,
-        backgroundColor = BackgroundColor,
-        waveCount = WaveCount,
-        waveWidth = WaveWidth,
-        speed = Speed,
-        opacity = Opacity,
-        targetFps = TargetFps
+        Colors = Colors,
+        BackgroundColor = BackgroundColor,
+        WaveCount = WaveCount,
+        WaveWidth = WaveWidth,
+        Speed = Speed,
+        Opacity = Opacity,
+        TargetFps = TargetFps
     };
 
-    private string ComputeConfigHash()
-    {
-        var hash = new HashCode();
-        foreach (var c in Colors) hash.Add(c);
-        hash.Add(BackgroundColor);
-        hash.Add(WaveCount);
-        hash.Add(WaveWidth);
-        hash.Add(Speed);
-        hash.Add(Opacity);
-        hash.Add(TargetFps);
-        return hash.ToHashCode().ToString();
-    }
+    private string ComputeConfigHash() => BuildConfig().GetHashCode().ToString();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

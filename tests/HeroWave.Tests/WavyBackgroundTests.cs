@@ -173,10 +173,8 @@ public class WavyBackgroundTests : BunitContext
         Assert.Single(initInvocations);
         Assert.Equal(2, initInvocations[0].Arguments.Count);
 
-        var configType = initInvocations[0].Arguments[1]!.GetType();
-        var targetFpsProp = configType.GetProperty("targetFps");
-        Assert.NotNull(targetFpsProp);
-        Assert.Equal(30, targetFpsProp!.GetValue(initInvocations[0].Arguments[1]));
+        var config = Assert.IsType<WavyBackgroundConfig>(initInvocations[0].Arguments[1]);
+        Assert.Equal(30, config.TargetFps);
     }
 
     [Fact]
