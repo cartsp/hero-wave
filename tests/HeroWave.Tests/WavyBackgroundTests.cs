@@ -1,6 +1,8 @@
 using Bunit;
 using Bunit.JSInterop;
 using HeroWave.Components;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.JSInterop;
 using Xunit;
 
@@ -175,5 +177,97 @@ public class WavyBackgroundTests : BunitContext
         var targetFpsProp = configType.GetProperty("targetFps");
         Assert.NotNull(targetFpsProp);
         Assert.Equal(30, targetFpsProp!.GetValue(initInvocations[0].Arguments[1]));
+    }
+
+    [Fact]
+    public void TargetFps_Is_Clamped_To_Minimum_1()
+    {
+        var cut = Render<WavyBackground>(p => p.Add(x => x.TargetFps, 0));
+        Assert.Equal(1, cut.Instance.TargetFps);
+    }
+
+    [Fact]
+    public void TargetFps_Is_Clamped_To_Maximum_120()
+    {
+        var cut = Render<WavyBackground>(p => p.Add(x => x.TargetFps, 999));
+        Assert.Equal(120, cut.Instance.TargetFps);
+    }
+
+    [Fact]
+    public void TargetFps_Negative_Is_Clamped_To_1()
+    {
+        var cut = Render<WavyBackground>(p => p.Add(x => x.TargetFps, -10));
+        Assert.Equal(1, cut.Instance.TargetFps);
+    }
+
+    /// <summary>
+    /// Host component that renders WavyBackground and allows re-rendering
+    /// with different parameters via StateHasChanged().
+    /// Required because bunit v2's BunitContext.Render&lt;T&gt;() creates new instances
+    /// each call, preventing OnParametersSetAsync testing on initialised components.
+    /// </summary>
+    private class WavyBackgroundHost : ComponentBase
+    {
+        internal double Speed { get; private set; } = 0.004;
+        internal string? Title { get; private set; }
+
+        public void ChangeSpeed(double speed) { Speed = speed; StateHasChanged(); }
+        public void ChangeTitle(string? title) { Title = title; StateHasChanged(); }
+
+        protected override void BuildRenderTree(RenderTreeBuilder builder)
+        {
+            builder.OpenComponent<WavyBackground>(0);
+            builder.AddComponentParameter(1, nameof(WavyBackground.Speed), Speed);
+            if (Title is not null)
+                builder.AddComponentParameter(2, nameof(WavyBackground.Title), Title);
+            builder.CloseComponent();
+        }
+    }
+
+    [Fact]
+    public void OnParametersSetAsync_CallsUpdate_WhenConfigChanges()
+    {
+        // Render host which renders WavyBackground internally
+        var host = Render<WavyBackgroundHost>();
+
+        // Trigger re-render of the same WavyBackground instance with changed Speed
+        host.InvokeAsync(() => host.Instance.ChangeSpeed(0.01));
+
+        // update() should have been called because Speed changed
+        var updateInvocations = _moduleInterop.Invocations["update"];
+        Assert.Single(updateInvocations);
+    }
+
+    [Fact]
+    public void OnParametersSetAsync_SkipsUpdate_WhenConfigUnchanged()
+    {
+        // Render host which renders WavyBackground internally
+        var host = Render<WavyBackgroundHost>();
+
+        // Trigger re-render with a non-config parameter change (Title)
+        host.InvokeAsync(() => host.Instance.ChangeTitle("New Title"));
+
+        // update() should NOT have been called since config values didn't change
+        var updateInvocations = _moduleInterop.Invocations["update"];
+        Assert.Empty(updateInvocations);
+    }
+
+    [Fact]
+    public async Task OnParametersSetAsync_Handles_JSDisconnectedException()
+    {
+        JSInterop.Mode = JSRuntimeMode.Strict;
+        var strictModule = JSInterop.SetupModule("./_content/HeroWave/wavy-background.js");
+        strictModule.Setup<string>("init", _ => true).SetResult("test-instance-update-err");
+        strictModule.SetupVoid("update", _ => true)
+            .SetException(new JSDisconnectedException("Circuit disconnected"));
+
+        // Render host which renders WavyBackground internally
+        var host = Render<WavyBackgroundHost>();
+
+        // Trigger re-render with changed config — update() throws JSDisconnectedException
+        // which should be caught silently
+        await host.InvokeAsync(() => host.Instance.ChangeSpeed(0.01));
+
+        await DisposeComponentsAsync();
     }
 }

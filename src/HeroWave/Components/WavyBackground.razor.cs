@@ -64,6 +64,7 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     /// <summary>
     /// Target frames per second for the animation loop. Defaults to <c>60</c>.
     /// Lower values reduce CPU/GPU usage on less capable devices.
+    /// Clamped to the range 1–120.
     /// </summary>
     [Parameter] public int TargetFps { get; set; } = 60;
 
@@ -114,6 +115,13 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
+        // OnParametersSetAsync fires BEFORE OnAfterRenderAsync on first render,
+        // so _module/_instanceId will be null during initialisation.
+        // The guard ensures we only call update() on subsequent parameter changes.
+
+        // Clamp TargetFps to valid range
+        TargetFps = Math.Max(1, Math.Min(TargetFps, 120));
+
         if (_module is null || _instanceId is null) return;
 
         var currentHash = ComputeConfigHash();

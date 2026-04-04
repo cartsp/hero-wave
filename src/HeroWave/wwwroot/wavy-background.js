@@ -100,7 +100,7 @@ export function init(canvas, config) {
         backgroundColor: config.backgroundColor,
         waveCount: config.waveCount,
         speed: config.speed,
-        targetFps: config.targetFps || 60
+        targetFps: Math.max(1, config.targetFps || 60)
     };
 
     // FPS throttling state
@@ -216,6 +216,8 @@ export function init(canvas, config) {
         config: cfg,
         observer,
         debouncedResize,
+        rebuildLayers: () => { layers = rebuildLayers(); },
+        stop: () => { running = false; },
         get animationFrameId() { return animationFrameId; },
     };
 
@@ -228,17 +230,20 @@ export function update(id, newConfig) {
     if (!instance) return;
 
     const cfg = instance.config;
+    const allowedKeys = ['waveWidth', 'opacity', 'colors', 'backgroundColor', 'waveCount', 'speed', 'targetFps'];
     for (const [key, val] of Object.entries(newConfig)) {
-        if (val !== undefined) cfg[key] = val;
+        if (allowedKeys.includes(key) && val !== undefined) cfg[key] = val;
     }
     if ('waveWidth' in newConfig || 'opacity' in newConfig) {
-        layers = rebuildLayers();
+        instance.rebuildLayers();
     }
 }
 
 export function dispose(id) {
     const instance = instances.get(id);
     if (!instance) return;
+
+    instance.stop();
 
     if (instance.animationFrameId) {
         cancelAnimationFrame(instance.animationFrameId);
