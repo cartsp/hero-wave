@@ -200,6 +200,69 @@ public class WavyBackgroundTests : BunitContext
         Assert.Equal(1, cut.Instance.TargetFps);
     }
 
+    // --- Reduced-motion and ARIA accessibility tests ---
+
+    [Fact]
+    public void Default_ReducedMotion_Is_RespectSystemPreference()
+    {
+        var cut = Render<WavyBackground>();
+        Assert.Equal(ReducedMotionBehavior.RespectSystemPreference, cut.Instance.ReducedMotion);
+    }
+
+    [Fact]
+    public void Canvas_Has_AriaHidden_Attribute()
+    {
+        var cut = Render<WavyBackground>();
+        var canvas = cut.Find("canvas.wavy-background-canvas");
+        Assert.Equal("true", canvas.GetAttribute("aria-hidden"));
+    }
+
+    [Fact]
+    public void Container_Does_Not_Have_Role_Attribute()
+    {
+        var cut = Render<WavyBackground>();
+        var container = cut.Find(".wavy-background-container");
+        Assert.Null(container.GetAttribute("role"));
+    }
+
+    [Fact]
+    public void ReducedMotion_AlwaysStatic_Maps_In_Config()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysStatic));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        Assert.Single(initInvocations);
+        var config = initInvocations[0].Arguments[1];
+        var prop = config.GetType().GetProperty("reducedMotion");
+        Assert.NotNull(prop);
+        Assert.Equal("alwaysStatic", prop.GetValue(config));
+    }
+
+    [Fact]
+    public void ReducedMotion_AlwaysAnimate_Maps_In_Config()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysAnimate));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        var config = initInvocations[0].Arguments[1];
+        var prop = config.GetType().GetProperty("reducedMotion");
+        Assert.Equal("alwaysAnimate", prop.GetValue(config));
+    }
+
+    [Fact]
+    public void ReducedMotion_RespectSystemPreference_Maps_In_Config()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.RespectSystemPreference));
+
+        var initInvocations = _moduleInterop.Invocations["init"];
+        var config = initInvocations[0].Arguments[1];
+        var prop = config.GetType().GetProperty("reducedMotion");
+        Assert.Equal("respectSystemPreference", prop.GetValue(config));
+    }
+
     /// <summary>
     /// Host component that renders WavyBackground and allows re-rendering
     /// with different parameters via StateHasChanged().

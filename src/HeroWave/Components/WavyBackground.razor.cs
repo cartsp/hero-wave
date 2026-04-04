@@ -3,6 +3,27 @@ using Microsoft.JSInterop;
 
 namespace HeroWave.Components;
 
+/// <summary>
+/// Controls how the wave animation behaves with respect to reduced-motion preferences.
+/// </summary>
+public enum ReducedMotionBehavior
+{
+    /// <summary>
+    /// Automatically pauses animation when the user's OS/browser requests reduced motion.
+    /// </summary>
+    RespectSystemPreference,
+
+    /// <summary>
+    /// Always animate regardless of system preference.
+    /// </summary>
+    AlwaysAnimate,
+
+    /// <summary>
+    /// Never animate; render a single static frame.
+    /// </summary>
+    AlwaysStatic
+}
+
 public partial class WavyBackground : ComponentBase, IAsyncDisposable
 {
     [Inject] private IJSRuntime JS { get; set; } = default!;
@@ -69,6 +90,12 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     [Parameter] public int TargetFps { get; set; } = 60;
 
     /// <summary>
+    /// Controls animation behavior for users who prefer reduced motion.
+    /// Defaults to <see cref="ReducedMotionBehavior.RespectSystemPreference"/>.
+    /// </summary>
+    [Parameter] public ReducedMotionBehavior ReducedMotion { get; set; } = ReducedMotionBehavior.RespectSystemPreference;
+
+    /// <summary>
     /// Optional CSS class applied to the text overlay container.
     /// </summary>
     [Parameter] public string? CssClass { get; set; }
@@ -78,6 +105,13 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
     private string? _instanceId;
     private string? _previousConfigHash;
 
+    private static string MapReducedMotion(ReducedMotionBehavior behavior) => behavior switch
+    {
+        ReducedMotionBehavior.AlwaysAnimate => "alwaysAnimate",
+        ReducedMotionBehavior.AlwaysStatic => "alwaysStatic",
+        _ => "respectSystemPreference"
+    };
+
     private object BuildConfig() => new
     {
         colors = Colors,
@@ -86,7 +120,8 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
         waveWidth = WaveWidth,
         speed = Speed,
         opacity = Opacity,
-        targetFps = TargetFps
+        targetFps = TargetFps,
+        reducedMotion = MapReducedMotion(ReducedMotion)
     };
 
     private string ComputeConfigHash()
@@ -99,6 +134,7 @@ public partial class WavyBackground : ComponentBase, IAsyncDisposable
         hash.Add(Speed);
         hash.Add(Opacity);
         hash.Add(TargetFps);
+        hash.Add(ReducedMotion);
         return hash.ToHashCode().ToString();
     }
 
