@@ -200,6 +200,72 @@ public class WavyBackgroundTests : BunitContext
         Assert.Equal(1, cut.Instance.TargetFps);
     }
 
+    // --- Reduced-motion and ARIA accessibility tests ---
+
+    [Fact]
+    public void Default_ReducedMotion_Is_RespectSystemPreference()
+    {
+        var cut = Render<WavyBackground>();
+        Assert.Equal(ReducedMotionBehavior.RespectSystemPreference, cut.Instance.ReducedMotion);
+    }
+
+    [Fact]
+    public void Canvas_Has_AriaHidden_Attribute()
+    {
+        var cut = Render<WavyBackground>();
+        var canvas = cut.Find("canvas.wavy-background-canvas");
+        Assert.Equal("true", canvas.GetAttribute("aria-hidden"));
+    }
+
+    [Fact]
+    public void Container_Does_Not_Have_Role_Attribute()
+    {
+        var cut = Render<WavyBackground>();
+        var container = cut.Find(".wavy-background-container");
+        Assert.Null(container.GetAttribute("role"));
+    }
+
+    /// <summary>
+    /// Extracts a named property from the anonymous config object passed to JS init.
+    /// Centralizes the reflection so config property tests have a single fragility point.
+    /// </summary>
+    private static string GetConfigProperty(object config, string propertyName)
+    {
+        var prop = config.GetType().GetProperty(propertyName)
+            ?? throw new InvalidOperationException($"Property '{propertyName}' not found on config object");
+        return (string)prop.GetValue(config)!;
+    }
+
+    [Fact]
+    public void ReducedMotion_AlwaysStatic_Maps_In_Config()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysStatic));
+
+        var config = _moduleInterop.Invocations["init"][0].Arguments[1]!;
+        Assert.Equal("alwaysStatic", GetConfigProperty(config, "reducedMotion"));
+    }
+
+    [Fact]
+    public void ReducedMotion_AlwaysAnimate_Maps_In_Config()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.AlwaysAnimate));
+
+        var config = _moduleInterop.Invocations["init"][0].Arguments[1]!;
+        Assert.Equal("alwaysAnimate", GetConfigProperty(config, "reducedMotion"));
+    }
+
+    [Fact]
+    public void ReducedMotion_RespectSystemPreference_Maps_In_Config()
+    {
+        Render<WavyBackground>(p => p
+            .Add(x => x.ReducedMotion, ReducedMotionBehavior.RespectSystemPreference));
+
+        var config = _moduleInterop.Invocations["init"][0].Arguments[1]!;
+        Assert.Equal("respectSystemPreference", GetConfigProperty(config, "reducedMotion"));
+    }
+
     /// <summary>
     /// Host component that renders WavyBackground and allows re-rendering
     /// with different parameters via StateHasChanged().
@@ -210,18 +276,36 @@ public class WavyBackgroundTests : BunitContext
     {
         internal double Speed { get; private set; } = 0.004;
         internal string? Title { get; private set; }
+        internal ReducedMotionBehavior ReducedMotion { get; private set; } = ReducedMotionBehavior.RespectSystemPreference;
 
         public void ChangeSpeed(double speed) { Speed = speed; StateHasChanged(); }
         public void ChangeTitle(string? title) { Title = title; StateHasChanged(); }
+        public void ChangeReducedMotion(ReducedMotionBehavior mode) { ReducedMotion = mode; StateHasChanged(); }
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
             builder.OpenComponent<WavyBackground>(0);
             builder.AddComponentParameter(1, nameof(WavyBackground.Speed), Speed);
+            builder.AddComponentParameter(2, nameof(WavyBackground.ReducedMotion), ReducedMotion);
             if (Title is not null)
-                builder.AddComponentParameter(2, nameof(WavyBackground.Title), Title);
+                builder.AddComponentParameter(3, nameof(WavyBackground.Title), Title);
             builder.CloseComponent();
         }
+    }
+
+    [Fact]
+    public void OnParametersSetAsync_CallsUpdate_WhenReducedMotionChanges()
+    {
+        var host = Render<WavyBackgroundHost>();
+
+        host.InvokeAsync(() => host.Instance.ChangeReducedMotion(ReducedMotionBehavior.AlwaysStatic));
+
+        var updateInvocations = _moduleInterop.Invocations["update"];
+        Assert.Single(updateInvocations);
+
+        var configArg = updateInvocations[0].Arguments[1];
+        var prop = configArg.GetType().GetProperty("reducedMotion");
+        Assert.Equal("alwaysStatic", prop!.GetValue(configArg));
     }
 
     [Fact]

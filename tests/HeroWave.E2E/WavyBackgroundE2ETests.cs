@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Playwright;
 using Xunit;
 
@@ -25,12 +26,19 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
         Timeout = 120_000
     };
 
+    private async Task<IPage> NavigateToAsync(string path = "")
+    {
+        var page = await NewPageAsync();
+        var url = string.IsNullOrEmpty(path) ? _fixture.BaseUrl : $"{_fixture.BaseUrl}/{path}";
+        await page.GotoAsync(url, NavigationOptions);
+        await page.WaitForSelectorAsync("canvas");
+        return page;
+    }
+
     [Fact]
     public async Task HomePage_Renders_WavyBackground()
     {
-        var page = await NewPageAsync();
-        await page.GotoAsync(_fixture.BaseUrl, NavigationOptions);
-        await page.WaitForSelectorAsync("canvas");
+        var page = await NavigateToAsync();
 
         var canvas = page.Locator("canvas").First;
         var box = await canvas.BoundingBoxAsync();
@@ -43,8 +51,7 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
     [Fact]
     public async Task HomePage_Has_Title_And_Subtitle()
     {
-        var page = await NewPageAsync();
-        await page.GotoAsync(_fixture.BaseUrl, NavigationOptions);
+        var page = await NavigateToAsync();
 
         var title = await page.Locator("h1").TextContentAsync();
         var subtitle = await page.Locator("p.wavy-background-subtitle").TextContentAsync();
@@ -131,5 +138,120 @@ public class WavyBackgroundE2ETests : IClassFixture<DemoAppFixture>
 
         var canvases = await page.Locator("canvas").CountAsync();
         Assert.True(canvases >= 6, $"Expected at least 6 canvas elements, found {canvases}");
+    }
+
+    // --- Accessibility & ReducedMotion E2E Tests ---
+
+    [Fact]
+    public async Task A11y_Canvas_Has_AriaHidden_True()
+    {
+        var page = await NavigateToAsync("a11y");
+        var ariaHidden = await page.Locator("canvas").GetAttributeAsync("aria-hidden");
+        Assert.Equal("true", ariaHidden);
+    }
+
+    [Fact]
+    public async Task A11y_Container_Has_No_Role_Attribute()
+    {
+        var page = await NavigateToAsync("a11y");
+        var container = page.Locator(".wavy-background-container");
+        var role = await container.GetAttributeAsync("role");
+        Assert.Null(role);
+    }
+
+    [Fact]
+    public async Task A11y_Static_Button_Stops_Animation()
+    {
+        var page = await NavigateToAsync("a11y");
+
+        var animatingBefore = await IsCanvasAnimatingAsync(page);
+        Assert.True(animatingBefore, "Canvas should be animating initially");
+
+        await page.Locator("#btn-static").ClickAsync();
+        await WaitForSubtitleAsync(page, "AlwaysStatic");
+
+        var animatingAfter = await IsCanvasAnimatingAsync(page);
+        Assert.False(animatingAfter, "Canvas should stop after clicking Static");
+    }
+
+    [Fact]
+    public async Task A11y_Animate_Button_Resumes_After_Static()
+    {
+        var page = await NavigateToAsync("a11y");
+
+        await page.Locator("#btn-static").ClickAsync();
+        await WaitForSubtitleAsync(page, "AlwaysStatic");
+
+        var animatingWhileStatic = await IsCanvasAnimatingAsync(page);
+        Assert.False(animatingWhileStatic, "Should be static");
+
+        await page.Locator("#btn-animate").ClickAsync();
+        await WaitForSubtitleAsync(page, "AlwaysAnimate");
+
+        var animatingAfterResume = await IsCanvasAnimatingAsync(page);
+        Assert.True(animatingAfterResume, "Should resume after clicking Animate");
+    }
+
+    [Fact]
+    public async Task A11y_PrefersReducedMotion_Stops_Animation()
+    {
+        var page = await NavigateToAsync("a11y");
+
+        var animatingBefore = await IsCanvasAnimatingAsync(page);
+        Assert.True(animatingBefore, "Should be animating before reduced-motion");
+
+        await page.EmulateMediaAsync(new() { ReducedMotion = ReducedMotion.Reduce });
+        await page.Locator("#btn-respect").ClickAsync();
+        await WaitForSubtitleAsync(page, "RespectSystemPreference");
+
+        var animatingAfter = await IsCanvasAnimatingAsync(page);
+        Assert.False(animatingAfter, "Should stop when prefers-reduced-motion is active");
+    }
+
+    [Fact]
+    public async Task A11y_AlwaysAnimate_Overrides_ReducedMotion()
+    {
+        var page = await NavigateToAsync("a11y");
+
+        // Enable system reduced-motion
+        await page.EmulateMediaAsync(new() { ReducedMotion = ReducedMotion.Reduce });
+        await page.Locator("#btn-respect").ClickAsync();
+        await WaitForSubtitleAsync(page, "RespectSystemPreference");
+
+        var animatingWhileReduced = await IsCanvasAnimatingAsync(page);
+        Assert.False(animatingWhileReduced, "Should be static when system prefers reduced-motion");
+
+        // Override with AlwaysAnimate — should animate despite system preference
+        await page.Locator("#btn-animate").ClickAsync();
+        await WaitForSubtitleAsync(page, "AlwaysAnimate");
+
+        var animatingAfterOverride = await IsCanvasAnimatingAsync(page);
+        Assert.True(animatingAfterOverride, "AlwaysAnimate should override prefers-reduced-motion");
+    }
+
+    /// <summary>
+    /// Waits for the Blazor subtitle to update with the given mode text.
+    /// More reliable than a hardcoded timeout — confirms the JS interop round-trip completed.
+    /// </summary>
+    private static async Task WaitForSubtitleAsync(IPage page, string modeText)
+    {
+        await page.WaitForFunctionAsync(
+            $"document.querySelector('.wavy-background-subtitle')?.textContent.includes('{modeText}')",
+            new PageWaitForFunctionOptions { Timeout = 10_000 });
+    }
+
+    /// <summary>
+    /// Checks animation state via the <c>data-herowave-animating</c> attribute on the canvas element.
+    /// This reads the JS internal state directly — more reliable than pixel-checksum diffing
+    /// in headless CI environments where canvas compositing may not produce visible frame changes.
+    /// </summary>
+    private static async Task<bool> IsCanvasAnimatingAsync(IPage page)
+    {
+        // Wait for the attribute to exist (JS init must complete)
+        await page.WaitForFunctionAsync(
+            "document.querySelector('canvas')?.dataset.herowaveAnimating !== undefined",
+            new PageWaitForFunctionOptions { Timeout = 5_000 });
+        var value = await page.Locator("canvas").First.GetAttributeAsync("data-herowave-animating");
+        return value == "true";
     }
 }

@@ -1,0 +1,22 @@
+@page "/a11y"
+
+<WavyBackground Title="Accessibility Demo" Subtitle="@($"Reduced Motion: {_motionMode}")" Height="100vh" ReducedMotion="@_motionMode">
+    <div style="position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px;">
+        <button id="btn-animate" @onclick="() => _motionMode = ReducedMotionBehavior.AlwaysAnimate"
+                style="padding: 8px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 13px;">
+            Animate
+        </button>
+        <button id="btn-static" @onclick="() => _motionMode = ReducedMotionBehavior.AlwaysStatic"
+                style="padding: 8px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 13px;">
+            Static
+        </button>
+        <button id="btn-respect" @onclick="() => _motionMode = ReducedMotionBehavior.RespectSystemPreference"
+                style="padding: 8px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; cursor: pointer; font-size: 13px;">
+            Respect System
+        </button>
+    </div>
+</WavyBackground>
+
+@code {
+    private ReducedMotionBehavior _motionMode = ReducedMotionBehavior.AlwaysAnimate;
+}
