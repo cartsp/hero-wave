@@ -51,7 +51,10 @@ Add the namespace to your `_Imports.razor`:
 | `WaveWidth` | `int` | `50` | Stroke width of each wave (px) |
 | `Speed` | `double` | `0.004` | Animation speed — time increment per frame (e.g. `0.004` slow, `0.008` fast) |
 | `Opacity` | `double` | `0.5` | Wave opacity (0.0 - 1.0) |
+| `TargetFps` | `int` | `60` | Target frames per second. Clamped to 1–120. Lower values reduce CPU/GPU usage. |
 | `CssClass` | `string?` | null | Additional CSS class on the overlay |
+
+> **Live update:** All visual parameters (`Colors`, `BackgroundColor`, `WaveCount`, `WaveWidth`, `Speed`, `Opacity`, `TargetFps`) can be changed at runtime without re-initialising the canvas. The component detects changes via a config hash and only calls the JS `update()` function when values actually change.
 
 ## Examples
 
@@ -117,6 +120,17 @@ Add the namespace to your `_Imports.razor`:
 <WavyBackground Colors="@(new[] { "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#fcd34d" })"
                 BackgroundColor="#1c1208" Speed="0.008" Opacity="0.45" />
 ```
+
+## Performance
+
+HeroWave includes several built-in optimisations:
+
+| Feature | Description |
+|---------|-------------|
+| **FPS Throttling** | `TargetFps` parameter caps frame rate (default 60). Set lower to save CPU/GPU on less capable devices. |
+| **Offscreen Pause** | `IntersectionObserver` pauses the animation loop when the canvas scrolls out of view. |
+| **Debounced Resize** | Window resize events are debounced (100 ms) to avoid layout thrashing. |
+| **Live Update** | Changing parameters at runtime calls `update()` instead of destroying and re-creating the canvas instance. |
 
 ## Contributing
 

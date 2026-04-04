@@ -8,15 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `TargetFps` parameter (default 60, clamped 1–120) to cap animation frame rate and reduce CPU/GPU usage on less capable devices
+- `IntersectionObserver` to automatically pause the animation loop when the canvas scrolls out of view
+- Debounced window resize handling (100 ms) to avoid layout thrashing
+- Live `update()` JS function so visual parameters can change at runtime without re-initialising the canvas
+- Config hash tracking in `OnParametersSetAsync` to avoid redundant JS interop calls on every re-render
+- Config key allowlist in JS `update()` to prevent arbitrary property injection
 - XML documentation comments on all component parameters for IntelliSense support
 - CHANGELOG.md tracking full release history
 
 ### Fixed
+- `dispose()` crash at runtime: instance stored in `Map` was missing `animationFrameId`, `running`, and `stop()`. Fixed by storing an instance object with getter/bridge methods that access closure variables inside `init()`
+- `update()` silently ignoring `waveWidth`/`opacity` changes: `rebuildLayers()` is now bridged through the instance object so config changes take effect
+- `OnParametersSetAsync` firing on every render: added config hash tracking so JS `update()` is only called when parameter values actually change
+- `frameInterval` stale after `update()`: `targetFps` changes via `update()` now take effect immediately since `frameInterval` is computed per-frame from `cfg.targetFps`
 - Empty `Colors` array no longer crashes rendering (falls back to default palette)
 - Stale blur reference and old repo URL in NuGet readiness spec
 - E2E resize test now uses polling instead of flaky `Task.Delay`
 
 ### Changed
+- `dispose()` now explicitly sets `running = false` via instance `stop()` bridge before cleanup
 - Trimmed unused template imports from demo `_Imports.razor` and unused CSS from `app.css`
 
 ## [2.1.1] - 2026-03-21
