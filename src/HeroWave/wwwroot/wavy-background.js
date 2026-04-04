@@ -85,6 +85,7 @@ function debounce(fn, ms) {
 export function init(canvas, config) {
     const id = String(nextId++);
     const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("HeroWave: Unable to get 2D rendering context");
     const noise = createNoise();
     let nt = 0;
     let animationFrameId = null;
@@ -100,7 +101,8 @@ export function init(canvas, config) {
         backgroundColor: config.backgroundColor,
         waveCount: config.waveCount,
         speed: config.speed,
-        targetFps: Math.max(1, config.targetFps || 60)
+        targetFps: Math.max(1, config.targetFps || 60),
+        reducedMotion: config.reducedMotion || 'respectSystemPreference'
     };
 
     // FPS throttling state
@@ -131,22 +133,25 @@ export function init(canvas, config) {
 
     const step = Math.max(3, Math.round(5 * scale));
 
+    // Reduced-motion support
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function shouldAnimate() {
+        const behavior = cfg.reducedMotion;
+        if (behavior === 'alwaysStatic') return false;
+        if (behavior === 'alwaysAnimate') return true;
+        return !motionQuery.matches;
+    }
+
     function resize() {
         canvas.width = Math.round(canvas.offsetWidth * scale);
         canvas.height = Math.round(canvas.offsetHeight * scale);
+
+        // Redraw static frame when not animating
+        if (!animationFrameId) drawFrame();
     }
 
-    function draw(timestamp) {
-        if (!running) return;
-
-        // FPS throttling: skip frame if not enough time has elapsed
-        const frameInterval = 1000 / cfg.targetFps;
-        if (timestamp - lastFrameTime < frameInterval) {
-            animationFrameId = requestAnimationFrame(draw);
-            return;
-        }
-        lastFrameTime = timestamp;
-
+    function drawFrame() {
         const w = canvas.width;
         const h = canvas.height;
 
@@ -176,6 +181,20 @@ export function init(canvas, config) {
 
         ctx.globalAlpha = 1;
         nt += cfg.speed;
+    }
+
+    function draw(timestamp) {
+        if (!running) return;
+
+        // FPS throttling: skip frame if not enough time has elapsed
+        const frameInterval = 1000 / cfg.targetFps;
+        if (timestamp - lastFrameTime < frameInterval) {
+            animationFrameId = requestAnimationFrame(draw);
+            return;
+        }
+        lastFrameTime = timestamp;
+
+        drawFrame();
         animationFrameId = requestAnimationFrame(draw);
     }
 
@@ -187,6 +206,22 @@ export function init(canvas, config) {
     // Debounced resize (100ms)
     const debouncedResize = debounce(resize, 100);
 
+    // Listen for runtime changes to the OS reduced-motion preference
+    const motionChangeHandler = () => {
+        if (shouldAnimate()) {
+            running = true;
+            if (!animationFrameId) startLoop();
+        } else {
+            running = false;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            drawFrame();
+        }
+    };
+    motionQuery.addEventListener('change', motionChangeHandler);
+
     // IntersectionObserver: pause when not visible
     const observer = new IntersectionObserver((entries) => {
         for (const entry of entries) {
@@ -197,9 +232,11 @@ export function init(canvas, config) {
                     animationFrameId = null;
                 }
             } else {
-                running = true;
-                if (!animationFrameId) {
-                    startLoop();
+                if (shouldAnimate()) {
+                    running = true;
+                    if (!animationFrameId) startLoop();
+                } else {
+                    drawFrame();
                 }
             }
         }
@@ -209,13 +246,21 @@ export function init(canvas, config) {
 
     resize();
     window.addEventListener("resize", debouncedResize);
-    startLoop();
+
+    if (shouldAnimate()) {
+        startLoop();
+    } else {
+        drawFrame();
+    }
 
     const instance = {
         canvas,
         config: cfg,
         observer,
         debouncedResize,
+        motionQuery,
+        motionChangeHandler,
+        shouldAnimate,
         rebuildLayers: () => { layers = rebuildLayers(); },
         stop: () => { running = false; },
         get animationFrameId() { return animationFrameId; },
@@ -230,7 +275,7 @@ export function update(id, newConfig) {
     if (!instance) return;
 
     const cfg = instance.config;
-    const allowedKeys = ['waveWidth', 'opacity', 'colors', 'backgroundColor', 'waveCount', 'speed', 'targetFps'];
+    const allowedKeys = ['waveWidth', 'opacity', 'colors', 'backgroundColor', 'waveCount', 'speed', 'targetFps', 'reducedMotion'];
     for (const [key, val] of Object.entries(newConfig)) {
         if (allowedKeys.includes(key) && val !== undefined) cfg[key] = val;
     }
@@ -244,6 +289,8 @@ export function dispose(id) {
     if (!instance) return;
 
     instance.stop();
+
+    instance.motionQuery.removeEventListener("change", instance.motionChangeHandler);
 
     if (instance.animationFrameId) {
         cancelAnimationFrame(instance.animationFrameId);
